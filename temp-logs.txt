@@ -1,0 +1,21 @@
+java.lang.RuntimeException: Could not execute entrypoint stage 'main' due to errors, provided by 'magicrender' at 'io.github.yuazer.magicrender.Magicrender'!
+	at net.fabricmc.loader.impl.FabricLoaderImpl.lambda$invokeEntrypoints$0(FabricLoaderImpl.java:413)
+	at net.fabricmc.loader.impl.util.ExceptionUtil.gatherExceptions(ExceptionUtil.java:33)
+	at net.fabricmc.loader.impl.FabricLoaderImpl.invokeEntrypoints(FabricLoaderImpl.java:411)
+	at net.fabricmc.loader.impl.game.minecraft.Hooks.startClient(Hooks.java:52)
+	at knot//net.minecraft.class_310.<init>(class_310.java:477)
+	at knot//net.minecraft.client.main.Main.main(Main.java:239)
+	at net.fabricmc.loader.impl.game.minecraft.MinecraftGameProvider.launch(MinecraftGameProvider.java:514)
+	at net.fabricmc.loader.impl.launch.knot.Knot.launch(Knot.java:72)
+	at net.fabricmc.loader.impl.launch.knot.KnotClient.main(KnotClient.java:23)
+Caused by: java.lang.ExceptionInInitializerError
+	at knot//io.github.yuazer.magicrender.network.MagicRenderPayloads.registerCommon(MagicRenderPayloads.kt:11)
+	at knot//io.github.yuazer.magicrender.Magicrender.onInitialize(Magicrender.kt:15)
+	at net.fabricmc.loader.impl.FabricLoaderImpl.invokeEntrypoints(FabricLoaderImpl.java:409)
+	... 6 more
+Caused by: net.minecraft.class_151: Non [a-z0-9/._-] character in path of location: minecraft:magicrender:play_effect
+	at knot//net.minecraft.class_2960.method_45137(class_2960.java:285)
+	at knot//net.minecraft.class_2960.method_60656(class_2960.java:60)
+	at knot//net.minecraft.class_8710.method_56483(class_8710.java:27)
+	at knot//io.github.yuazer.magicrender.network.PlayEffectPayload.<clinit>(MagicRenderPayloads.kt:26)
+	... 9 more

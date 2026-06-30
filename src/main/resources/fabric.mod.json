@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "id": "magicrender",
+  "version": "${version}",
+  "name": "MagicRender",
+  "description": "",
+  "authors": [],
+  "contact": {},
+  "license": "All-Rights-Reserved",
+  "icon": "assets/magicrender/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "fabric-datagen": [
+      "io.github.yuazer.magicrender.client.MagicrenderDataGenerator"
+    ],
+    "client": [
+      "io.github.yuazer.magicrender.client.MagicrenderClient"
+    ],
+    "main": [
+      "io.github.yuazer.magicrender.Magicrender"
+    ]
+  },
+  "mixins": [
+    "magicrender.mixins.json",
+    {
+      "config": "magicrender.client.mixins.json",
+      "environment": "client"
+    }
+  ],
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "fabric-language-kotlin": ">=${kotlin_loader_version}",
+    "fabric-api": "*",
+    "minecraft": "${minecraft_version}"
+  }
+}

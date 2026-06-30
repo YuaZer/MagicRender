@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MagicRender Effect Editor</title>
+  <link rel="stylesheet" href="/app.css">
+</head>
+<body>
+  <main class="shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="mark"></div>
+        <div>
+          <h1>MagicRender</h1>
+          <p data-i18n="appSubtitle">Effect Editor</p>
+        </div>
+      </div>
+      <nav class="tabs" id="tabs"></nav>
+      <section class="panel compact">
+        <h2 data-i18n="runtimeTitle">Runtime</h2>
+        <dl id="runtime"></dl>
+        <button id="reloadBtn" class="secondary" data-i18n="reloadConfig">Reload Config</button>
+      </section>
+    </aside>
+
+    <section class="workspace">
+      <header class="toolbar">
+        <div>
+          <h2 id="pageTitle">Basic</h2>
+          <p id="pageHint">Edit effect metadata and shared visibility.</p>
+        </div>
+        <div class="actions">
+          <select id="languageSelect" class="language-select" aria-label="Language">
+            <option value="en">English</option>
+            <option value="zh">中文</option>
+          </select>
+          <button id="validateBtn" class="secondary" data-i18n="validate">Validate</button>
+          <button id="previewBtn" data-i18n="preview">Preview</button>
+          <button id="stopBtn" class="secondary" data-i18n="stop">Stop</button>
+          <button id="exportBtn" data-i18n="export">Export</button>
+          <button id="overwriteBtn" class="danger" data-i18n="overwrite">Overwrite</button>
+        </div>
+      </header>
+
+      <section class="content">
+        <form id="form" class="form-grid"></form>
+        <aside class="inspector">
+          <section class="panel preview-panel" id="previewPanel">
+            <div class="panel-head">
+              <h2 data-i18n="previewPanel">Preview</h2>
+              <div class="panel-actions">
+                <button id="resetCameraBtn" class="icon-button secondary" type="button" data-i18n-title="resetCamera" title="Reset camera">↺</button>
+                <button id="expandPreviewBtn" class="icon-button secondary" type="button" data-i18n-title="expandPreview" title="Expand preview">⤢</button>
+              </div>
+            </div>
+            <div class="preview-stage">
+              <canvas id="previewCanvas"></canvas>
+            </div>
+          </section>
+          <section class="panel">
+            <h2 data-i18n="statusPanel">Status</h2>
+            <div id="status" class="status">Ready.</div>
+            <div id="messages" class="messages"></div>
+          </section>
+          <section class="panel">
+            <h2 data-i18n="jsonPanel">Config JSON</h2>
+            <textarea id="jsonView" spellcheck="false"></textarea>
+          </section>
+        </aside>
+      </section>
+    </section>
+  </main>
+  <script type="module" src="/app.js"></script>
+</body>
+</html>
