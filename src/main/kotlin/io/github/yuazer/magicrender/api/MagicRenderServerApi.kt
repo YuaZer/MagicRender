@@ -117,6 +117,6 @@ object MagicRenderServerApi {
     }
 
     private fun defaultOffset(entity: Entity): Vec3 {
-        return Vec3(0.0, entity.getBbHeight().toDouble() * 0.55, 0.0)
+        return Vec3(0.0, entity.bbHeight.toDouble() * 0.55, 0.0)
     }
 }

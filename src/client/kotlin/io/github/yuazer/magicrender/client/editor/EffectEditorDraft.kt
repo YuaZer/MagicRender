@@ -2,10 +2,17 @@ package io.github.yuazer.magicrender.client.editor
 
 import com.google.gson.JsonObject
 import io.github.yuazer.magicrender.config.BeamComponent
+import io.github.yuazer.magicrender.config.AdvancedVisualComponent
+import io.github.yuazer.magicrender.config.BloomApproximationComponent
+import io.github.yuazer.magicrender.config.CircleLayerComponent
+import io.github.yuazer.magicrender.config.CoreGlowComponent
 import io.github.yuazer.magicrender.config.EffectComponents
 import io.github.yuazer.magicrender.config.EffectDefinition
 import io.github.yuazer.magicrender.config.EffectVisibility
 import io.github.yuazer.magicrender.config.MagicCircleComponent
+import io.github.yuazer.magicrender.config.ParticleEmitterComponent
+import io.github.yuazer.magicrender.config.RadialBurstComponent
+import io.github.yuazer.magicrender.config.RibbonBundleComponent
 import io.github.yuazer.magicrender.config.TrailComponent
 import io.github.yuazer.magicrender.config.TrailMotionComponent
 import io.github.yuazer.magicrender.config.TrailMotionFormulaComponent
@@ -36,7 +43,8 @@ data class EffectEditorDraft(
             components = EffectComponents(
                 magicCircle = components.magicCircle.toComponent(),
                 beam = components.beam.toComponent(),
-                trail = components.trail.toComponent()
+                trail = components.trail.toComponent(),
+                advanced = components.advanced.toComponent()
             )
         )
     }
@@ -86,6 +94,24 @@ data class EffectEditorDraft(
                         colorEnd = "#FF66FFFF",
                         segments = 18,
                         noise = 0.18
+                    ),
+                    advanced = AdvancedDraft(
+                        enabled = true,
+                        core = CoreGlowDraft(enabled = true, color = "#FF66FFFF", radius = 0.75, pulseAmplitude = 0.22),
+                        particleEmitters = mutableListOf(
+                            ParticleEmitterDraft(enabled = true, shape = "sphere", count = 180, colorStart = "#FF445CFF", colorEnd = "#AAFF44FF", sizeStart = 0.08, sizeEnd = 0.018, radius = 2.4, height = 2.2, noise = 0.35),
+                            ParticleEmitterDraft(enabled = true, shape = "column", count = 120, colorStart = "#CCAA66FF", colorEnd = "#3366FFFF", sizeStart = 0.06, sizeEnd = 0.015, radius = 0.9, height = 4.2, speed = 0.04, swirlSpeed = 1.4)
+                        ),
+                        ribbonBundles = mutableListOf(
+                            RibbonBundleDraft(enabled = true, count = 12, widthStart = 0.12, widthEnd = 0.018, colorStart = "#FFFFEEAA", colorEnd = "#FF66FF99", length = 8.0, samples = 120, phaseStep = 21.0, amplitude = 0.75, frequency = 1.5, twist = 0.6, flowSpeed = 0.12)
+                        ),
+                        circleLayers = mutableListOf(
+                            CircleLayerDraft(enabled = true, radius = 2.1, thickness = 0.045, color = "#FFFFFF22", rotationSpeed = 1.0, glyphs = 18),
+                            CircleLayerDraft(enabled = true, radius = 1.45, thickness = 0.03, color = "#CCFF66FF", rotationSpeed = -1.7, glyphs = 12)
+                        ),
+                        radialBursts = mutableListOf(
+                            RadialBurstDraft(enabled = true, rays = 22, length = 2.8, widthStart = 0.09, widthEnd = 0.0, colorStart = "#FFFF66FF", colorEnd = "#00FF66FF", rotationSpeed = 0.45)
+                        )
                     )
                 )
             )
@@ -109,7 +135,8 @@ data class VisibilityDraft(
 data class ComponentDrafts(
     var trail: TrailDraft = TrailDraft(),
     var beam: BeamDraft = BeamDraft(),
-    var magicCircle: MagicCircleDraft = MagicCircleDraft()
+    var magicCircle: MagicCircleDraft = MagicCircleDraft(),
+    var advanced: AdvancedDraft = AdvancedDraft()
 )
 
 data class TrailDraft(
@@ -240,5 +267,126 @@ data class MagicCircleDraft(
             glyphs = glyphs,
             blendMode = blendMode.ifBlank { "additive" }
         )
+    }
+}
+
+data class AdvancedDraft(
+    var enabled: Boolean = false,
+    var bloom: BloomApproximationDraft = BloomApproximationDraft(),
+    var core: CoreGlowDraft = CoreGlowDraft(),
+    var particleEmitters: MutableList<ParticleEmitterDraft> = mutableListOf(),
+    var ribbonBundles: MutableList<RibbonBundleDraft> = mutableListOf(),
+    var circleLayers: MutableList<CircleLayerDraft> = mutableListOf(),
+    var radialBursts: MutableList<RadialBurstDraft> = mutableListOf()
+) {
+    fun toComponent(): AdvancedVisualComponent {
+        return AdvancedVisualComponent(
+            enabled = enabled,
+            bloom = bloom.toComponent(),
+            core = core.toComponent(),
+            particleEmitters = particleEmitters.map { it.toComponent() },
+            ribbonBundles = ribbonBundles.map { it.toComponent() },
+            circleLayers = circleLayers.map { it.toComponent() },
+            radialBursts = radialBursts.map { it.toComponent() }
+        )
+    }
+}
+
+data class BloomApproximationDraft(
+    var enabled: Boolean = true,
+    var layers: Int = 3,
+    var scaleStep: Double = 1.8,
+    var alphaFalloff: Double = 0.45
+) {
+    fun toComponent(): BloomApproximationComponent = BloomApproximationComponent(enabled, layers, scaleStep, alphaFalloff)
+}
+
+data class CoreGlowDraft(
+    var enabled: Boolean = false,
+    var color: String = "#FFFFFFFF",
+    var radius: Double = 0.6,
+    var pulseAmplitude: Double = 0.18,
+    var pulseSpeed: Double = 0.12,
+    var texture: String = "minecraft:textures/particle/flash.png",
+    var blendMode: String = "additive"
+) {
+    fun toComponent(): CoreGlowComponent = CoreGlowComponent(enabled, color, radius, pulseAmplitude, pulseSpeed, texture, blendMode)
+}
+
+data class ParticleEmitterDraft(
+    var enabled: Boolean = true,
+    var shape: String = "sphere",
+    var count: Int = 96,
+    var colorStart: String = "#FFFFFFFF",
+    var colorEnd: String = "#FFFFFFFF",
+    var sizeStart: Double = 0.08,
+    var sizeEnd: Double = 0.02,
+    var radius: Double = 1.2,
+    var height: Double = 2.0,
+    var speed: Double = 0.02,
+    var swirlSpeed: Double = 0.0,
+    var noise: Double = 0.2,
+    var texture: String = "minecraft:textures/particle/flash.png",
+    var blendMode: String = "additive"
+) {
+    fun toComponent(): ParticleEmitterComponent {
+        return ParticleEmitterComponent(enabled, shape, count, colorStart, colorEnd, sizeStart, sizeEnd, radius, height, speed, swirlSpeed, noise, texture, blendMode)
+    }
+}
+
+data class RibbonBundleDraft(
+    var enabled: Boolean = true,
+    var count: Int = 8,
+    var widthStart: Double = 0.12,
+    var widthEnd: Double = 0.02,
+    var colorStart: String = "#FFFFFFFF",
+    var colorEnd: String = "#FFFFFFFF",
+    var length: Double = 8.0,
+    var samples: Int = 96,
+    var phaseStep: Double = 24.0,
+    var amplitude: Double = 0.8,
+    var frequency: Double = 1.4,
+    var twist: Double = 0.45,
+    var flowSpeed: Double = 0.08,
+    var texture: String = "minecraft:textures/particle/flame.png",
+    var blendMode: String = "additive"
+) {
+    fun toComponent(): RibbonBundleComponent {
+        return RibbonBundleComponent(enabled, count, widthStart, widthEnd, colorStart, colorEnd, length, samples, phaseStep, amplitude, frequency, twist, flowSpeed, texture, blendMode)
+    }
+}
+
+data class CircleLayerDraft(
+    var enabled: Boolean = true,
+    var radius: Double = 2.0,
+    var thickness: Double = 0.04,
+    var color: String = "#FFFFFFFF",
+    var segments: Int = 128,
+    var rotationSpeed: Double = 1.0,
+    var glyphs: Int = 0,
+    var glyphMode: String = "ticks",
+    var facing: String = "face_camera",
+    var blendMode: String = "additive"
+) {
+    fun toComponent(): CircleLayerComponent {
+        return CircleLayerComponent(enabled, radius, thickness, color, segments, rotationSpeed, glyphs, glyphMode, facing, blendMode)
+    }
+}
+
+data class RadialBurstDraft(
+    var enabled: Boolean = true,
+    var rays: Int = 16,
+    var length: Double = 2.8,
+    var widthStart: Double = 0.08,
+    var widthEnd: Double = 0.0,
+    var colorStart: String = "#FFFFFFFF",
+    var colorEnd: String = "#FFFFFF00",
+    var rotationSpeed: Double = 0.0,
+    var randomJitter: Double = 0.15,
+    var texture: String = "minecraft:textures/particle/flash.png",
+    var blendMode: String = "additive"
+) {
+    fun toComponent(): RadialBurstComponent {
+        return RadialBurstComponent(enabled, rays, length, widthStart, widthEnd, colorStart, colorEnd, rotationSpeed, randomJitter, texture, blendMode)
     }
 }

@@ -22,6 +22,7 @@ object EffectEditorJson {
         components.add("trail", trail(effect))
         components.add("magicCircle", magicCircle(effect))
         components.add("beam", beam(effect))
+        components.add("advanced", advanced(effect))
         root.add("components", components)
         return root
     }
@@ -96,6 +97,119 @@ object EffectEditorJson {
         json.addProperty("noise", beam.noise)
         json.addProperty("texture", beam.texture)
         json.addProperty("blendMode", beam.blendMode)
+        return json
+    }
+
+    private fun advanced(effect: EffectDefinition): JsonObject {
+        val advanced = effect.components.advanced
+        val json = JsonObject()
+        json.addProperty("enabled", advanced.enabled)
+        val bloom = JsonObject()
+        bloom.addProperty("enabled", advanced.bloom.enabled)
+        bloom.addProperty("layers", advanced.bloom.layers)
+        bloom.addProperty("scaleStep", advanced.bloom.scaleStep)
+        bloom.addProperty("alphaFalloff", advanced.bloom.alphaFalloff)
+        json.add("bloom", bloom)
+
+        val core = JsonObject()
+        core.addProperty("enabled", advanced.core.enabled)
+        core.addProperty("color", advanced.core.color)
+        core.addProperty("radius", advanced.core.radius)
+        core.addProperty("pulseAmplitude", advanced.core.pulseAmplitude)
+        core.addProperty("pulseSpeed", advanced.core.pulseSpeed)
+        core.addProperty("texture", advanced.core.texture)
+        core.addProperty("blendMode", advanced.core.blendMode)
+        json.add("core", core)
+
+        val emitters = com.google.gson.JsonArray()
+        for (emitter in advanced.particleEmitters) {
+            val item = JsonObject()
+            item.addProperty("enabled", emitter.enabled)
+            item.addProperty("shape", emitter.shape)
+            item.addProperty("count", emitter.count)
+            val color = JsonObject()
+            color.addProperty("start", emitter.colorStart)
+            color.addProperty("end", emitter.colorEnd)
+            item.add("color", color)
+            val size = JsonObject()
+            size.addProperty("start", emitter.sizeStart)
+            size.addProperty("end", emitter.sizeEnd)
+            item.add("size", size)
+            item.addProperty("radius", emitter.radius)
+            item.addProperty("height", emitter.height)
+            item.addProperty("speed", emitter.speed)
+            item.addProperty("swirlSpeed", emitter.swirlSpeed)
+            item.addProperty("noise", emitter.noise)
+            item.addProperty("texture", emitter.texture)
+            item.addProperty("blendMode", emitter.blendMode)
+            emitters.add(item)
+        }
+        json.add("particleEmitters", emitters)
+
+        val bundles = com.google.gson.JsonArray()
+        for (bundle in advanced.ribbonBundles) {
+            val item = JsonObject()
+            item.addProperty("enabled", bundle.enabled)
+            item.addProperty("count", bundle.count)
+            val width = JsonObject()
+            width.addProperty("start", bundle.widthStart)
+            width.addProperty("end", bundle.widthEnd)
+            item.add("width", width)
+            val color = JsonObject()
+            color.addProperty("start", bundle.colorStart)
+            color.addProperty("end", bundle.colorEnd)
+            item.add("color", color)
+            item.addProperty("length", bundle.length)
+            item.addProperty("samples", bundle.samples)
+            item.addProperty("phaseStep", bundle.phaseStep)
+            item.addProperty("amplitude", bundle.amplitude)
+            item.addProperty("frequency", bundle.frequency)
+            item.addProperty("twist", bundle.twist)
+            item.addProperty("flowSpeed", bundle.flowSpeed)
+            item.addProperty("texture", bundle.texture)
+            item.addProperty("blendMode", bundle.blendMode)
+            bundles.add(item)
+        }
+        json.add("ribbonBundles", bundles)
+
+        val layers = com.google.gson.JsonArray()
+        for (layer in advanced.circleLayers) {
+            val item = JsonObject()
+            item.addProperty("enabled", layer.enabled)
+            item.addProperty("radius", layer.radius)
+            item.addProperty("thickness", layer.thickness)
+            item.addProperty("color", layer.color)
+            item.addProperty("segments", layer.segments)
+            item.addProperty("rotationSpeed", layer.rotationSpeed)
+            item.addProperty("glyphs", layer.glyphs)
+            item.addProperty("glyphMode", layer.glyphMode)
+            item.addProperty("facing", layer.facing)
+            item.addProperty("blendMode", layer.blendMode)
+            layers.add(item)
+        }
+        json.add("circleLayers", layers)
+
+        val bursts = com.google.gson.JsonArray()
+        for (burst in advanced.radialBursts) {
+            val item = JsonObject()
+            item.addProperty("enabled", burst.enabled)
+            item.addProperty("rays", burst.rays)
+            item.addProperty("length", burst.length)
+            val width = JsonObject()
+            width.addProperty("start", burst.widthStart)
+            width.addProperty("end", burst.widthEnd)
+            item.add("width", width)
+            val color = JsonObject()
+            color.addProperty("start", burst.colorStart)
+            color.addProperty("end", burst.colorEnd)
+            item.add("color", color)
+            item.addProperty("rotationSpeed", burst.rotationSpeed)
+            item.addProperty("randomJitter", burst.randomJitter)
+            item.addProperty("texture", burst.texture)
+            item.addProperty("blendMode", burst.blendMode)
+            bursts.add(item)
+        }
+        json.add("radialBursts", bursts)
         return json
     }
 }

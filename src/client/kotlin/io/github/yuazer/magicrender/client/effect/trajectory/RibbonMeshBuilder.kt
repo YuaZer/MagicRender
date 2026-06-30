@@ -55,6 +55,19 @@ object RibbonMeshBuilder {
         )
     }
 
+    fun buildCustom(
+        points: List<Vec3>,
+        texture: String,
+        blendMode: EffectBlendMode,
+        cameraPosition: Vec3,
+        renderMode: TrailRenderMode,
+        widthAt: (Int) -> Double,
+        colorAt: (Int) -> Int,
+        vOffset: Float = 0.0f
+    ): RibbonMesh {
+        return build(points, texture, blendMode, cameraPosition, renderMode, widthAt, colorAt, vOffset)
+    }
+
     private fun build(
         points: List<Vec3>,
         texture: String,
@@ -62,7 +75,8 @@ object RibbonMeshBuilder {
         cameraPosition: Vec3,
         renderMode: TrailRenderMode,
         widthAt: (Int) -> Double,
-        colorAt: (Int) -> Int
+        colorAt: (Int) -> Int,
+        vOffset: Float = 0.0f
     ): RibbonMesh {
         if (points.size < 2) return RibbonMesh(texture, blendMode, emptyList())
 
@@ -90,8 +104,8 @@ object RibbonMeshBuilder {
 
             val currentColor = colorAt(index)
             val nextColor = colorAt(index + 1)
-            val v0 = accumulatedDistance.toFloat()
-            val v1 = nextDistance.toFloat()
+            val v0 = accumulatedDistance.toFloat() + vOffset
+            val v1 = nextDistance.toFloat() + vOffset
 
             vertices += RibbonVertex(currentLeft, currentColor, 0.0f, v0)
             vertices += RibbonVertex(currentRight, currentColor, 1.0f, v0)

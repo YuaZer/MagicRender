@@ -1,5 +1,6 @@
 package io.github.yuazer.magicrender.client.api
 
+import io.github.yuazer.magicrender.client.effect.trajectory.AdvancedEffectManager
 import io.github.yuazer.magicrender.client.effect.trajectory.MagicCircleManager
 import io.github.yuazer.magicrender.client.effect.trajectory.MotionEffectManager
 import io.github.yuazer.magicrender.client.effect.trajectory.TrailAnchor
@@ -44,6 +45,7 @@ object MagicRenderClientApi {
         val parts = mutableListOf<MagicRenderComponentHandle>()
         MotionEffectManager.spawnTrail(effect, source)?.let { parts += MagicRenderComponentHandle(MagicRenderComponentType.TRAIL, it) }
         MagicCircleManager.spawn(effect, source)?.let { parts += MagicRenderComponentHandle(MagicRenderComponentType.MAGIC_CIRCLE, it) }
+        AdvancedEffectManager.spawn(effect, source)?.let { parts += MagicRenderComponentHandle(MagicRenderComponentType.ADVANCED, it) }
         return register(effect.id, source.entityIdOrNull(), parts)
     }
 
@@ -71,6 +73,7 @@ object MagicRenderClientApi {
         MotionEffectManager.spawnTrail(effect, source)?.let { parts += MagicRenderComponentHandle(MagicRenderComponentType.TRAIL, it) }
         MagicCircleManager.spawn(effect, source)?.let { parts += MagicRenderComponentHandle(MagicRenderComponentType.MAGIC_CIRCLE, it) }
         MotionEffectManager.spawnBeam(effect, source, target)?.let { parts += MagicRenderComponentHandle(MagicRenderComponentType.BEAM, it) }
+        AdvancedEffectManager.spawn(effect, source, target)?.let { parts += MagicRenderComponentHandle(MagicRenderComponentType.ADVANCED, it) }
         return register(effect.id, source.entityIdOrNull(), parts)
     }
 
@@ -161,6 +164,7 @@ object MagicRenderClientApi {
         val parts = mutableListOf<MagicRenderComponentHandle>()
         MotionEffectManager.spawnTrail(effect, source)?.let { parts += MagicRenderComponentHandle(MagicRenderComponentType.TRAIL, it) }
         MagicCircleManager.spawn(effect, source)?.let { parts += MagicRenderComponentHandle(MagicRenderComponentType.MAGIC_CIRCLE, it) }
+        AdvancedEffectManager.spawn(effect, source)?.let { parts += MagicRenderComponentHandle(MagicRenderComponentType.ADVANCED, it) }
         return register(effect.id, entity.id, parts)
     }
 
@@ -207,6 +211,7 @@ object MagicRenderClientApi {
         }
         MotionEffectManager.stop(handle)
         MagicCircleManager.stop(handle)
+        AdvancedEffectManager.stop(handle)
     }
 
     @JvmStatic
@@ -222,6 +227,7 @@ object MagicRenderClientApi {
         sessions.clear()
         MotionEffectManager.clear()
         MagicCircleManager.clear()
+        AdvancedEffectManager.clear()
     }
 
     @JvmStatic
@@ -288,6 +294,7 @@ object MagicRenderClientApi {
                 MagicRenderComponentType.TRAIL,
                 MagicRenderComponentType.BEAM -> MotionEffectManager.stop(part.handle)
                 MagicRenderComponentType.MAGIC_CIRCLE -> MagicCircleManager.stop(part.handle)
+                MagicRenderComponentType.ADVANCED -> AdvancedEffectManager.stop(part.handle)
             }
         }
     }
@@ -303,6 +310,7 @@ object MagicRenderClientApi {
             MagicRenderComponentType.TRAIL,
             MagicRenderComponentType.BEAM -> MotionEffectManager.isActive(part.handle)
             MagicRenderComponentType.MAGIC_CIRCLE -> MagicCircleManager.isActive(part.handle)
+            MagicRenderComponentType.ADVANCED -> AdvancedEffectManager.isActive(part.handle)
         }
     }
 
@@ -332,5 +340,6 @@ data class MagicRenderComponentHandle(
 enum class MagicRenderComponentType {
     TRAIL,
     BEAM,
-    MAGIC_CIRCLE
+    MAGIC_CIRCLE,
+    ADVANCED
 }

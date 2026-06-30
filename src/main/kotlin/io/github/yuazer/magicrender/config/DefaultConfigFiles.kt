@@ -245,6 +245,99 @@ internal object DefaultConfigFiles {
       "innerRadiusScale": 0.68,
       "glyphs": 18,
       "blendMode": "additive"
+    },
+    "advanced": {
+      "enabled": true,
+      "bloom": {
+        "enabled": true,
+        "layers": 3,
+        "scaleStep": 1.8,
+        "alphaFalloff": 0.45
+      },
+      "core": {
+        "enabled": true,
+        "color": "#FFFF66FF",
+        "radius": 0.65,
+        "pulseAmplitude": 0.2,
+        "pulseSpeed": 0.12,
+        "texture": "minecraft:textures/particle/flash.png",
+        "blendMode": "additive"
+      },
+      "particleEmitters": [
+        {
+          "enabled": true,
+          "shape": "sphere",
+          "count": 160,
+          "color": {
+            "start": "#FF445CFF",
+            "end": "#AAFF44FF"
+          },
+          "size": {
+            "start": 0.08,
+            "end": 0.018
+          },
+          "radius": 2.2,
+          "height": 2.0,
+          "noise": 0.35,
+          "texture": "minecraft:textures/particle/flash.png",
+          "blendMode": "additive"
+        }
+      ],
+      "ribbonBundles": [
+        {
+          "enabled": true,
+          "count": 10,
+          "width": {
+            "start": 0.12,
+            "end": 0.018
+          },
+          "color": {
+            "start": "#FFFFEEAA",
+            "end": "#FF66FF99"
+          },
+          "length": 8.0,
+          "samples": 120,
+          "phaseStep": 24.0,
+          "amplitude": 0.75,
+          "frequency": 1.5,
+          "twist": 0.6,
+          "flowSpeed": 0.12,
+          "texture": "minecraft:textures/particle/flame.png",
+          "blendMode": "additive"
+        }
+      ],
+      "circleLayers": [
+        {
+          "enabled": true,
+          "radius": 2.2,
+          "thickness": 0.045,
+          "color": "#FFFFFF22",
+          "segments": 160,
+          "rotationSpeed": 1.0,
+          "glyphs": 18,
+          "glyphMode": "ticks",
+          "facing": "face_camera",
+          "blendMode": "additive"
+        }
+      ],
+      "radialBursts": [
+        {
+          "enabled": true,
+          "rays": 22,
+          "length": 2.8,
+          "width": {
+            "start": 0.09,
+            "end": 0.0
+          },
+          "color": {
+            "start": "#FFFF66FF",
+            "end": "#00FF66FF"
+          },
+          "rotationSpeed": 0.45,
+          "texture": "minecraft:textures/particle/flash.png",
+          "blendMode": "additive"
+        }
+      ]
     }
   }
 }

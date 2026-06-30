@@ -33,9 +33,10 @@ object EffectEditorValidation {
         validateTrail(draft.components.trail, errors, warnings)
         validateBeam(draft.components.beam, errors)
         validateCircle(draft.components.magicCircle, errors)
+        validateAdvanced(draft.components.advanced, errors)
         validatePreview(draft.preview, errors)
 
-        if (!draft.components.trail.enabled && !draft.components.beam.enabled && !draft.components.magicCircle.enabled) {
+        if (!draft.components.trail.enabled && !draft.components.beam.enabled && !draft.components.magicCircle.enabled && !draft.components.advanced.enabled) {
             warnings += tr("magicrender.editor.validation.no_world_component")
         }
 
@@ -92,6 +93,41 @@ object EffectEditorValidation {
         range(preview.fixedDistance, 0.5, 64.0, "preview.fixedDistance", errors)
         range(preview.sourceHeightOffset, -2.0, 3.0, "preview.sourceHeightOffset", errors)
         range(preview.targetHeightOffset, -2.0, 3.0, "preview.targetHeightOffset", errors)
+    }
+
+    private fun validateAdvanced(advanced: AdvancedDraft, errors: MutableList<Component>) {
+        range(advanced.bloom.layers, 0, 8, "advanced.bloom.layers", errors)
+        range(advanced.bloom.scaleStep, 1.0, 6.0, "advanced.bloom.scaleStep", errors)
+        range(advanced.bloom.alphaFalloff, 0.05, 1.0, "advanced.bloom.alphaFalloff", errors)
+        color(advanced.core.color, "advanced.core.color", errors)
+        range(advanced.core.radius, 0.01, 16.0, "advanced.core.radius", errors)
+        identifier(advanced.core.texture, "advanced.core.texture", errors)
+        advanced.particleEmitters.forEachIndexed { index, emitter ->
+            color(emitter.colorStart, "advanced.particleEmitters[$index].color.start", errors)
+            color(emitter.colorEnd, "advanced.particleEmitters[$index].color.end", errors)
+            range(emitter.count, 0, 4096, "advanced.particleEmitters[$index].count", errors)
+            range(emitter.sizeStart, 0.005, 4.0, "advanced.particleEmitters[$index].size.start", errors)
+            range(emitter.sizeEnd, 0.0, 4.0, "advanced.particleEmitters[$index].size.end", errors)
+            identifier(emitter.texture, "advanced.particleEmitters[$index].texture", errors)
+        }
+        advanced.ribbonBundles.forEachIndexed { index, bundle ->
+            color(bundle.colorStart, "advanced.ribbonBundles[$index].color.start", errors)
+            color(bundle.colorEnd, "advanced.ribbonBundles[$index].color.end", errors)
+            range(bundle.count, 0, 64, "advanced.ribbonBundles[$index].count", errors)
+            range(bundle.samples, 2, 256, "advanced.ribbonBundles[$index].samples", errors)
+            identifier(bundle.texture, "advanced.ribbonBundles[$index].texture", errors)
+        }
+        advanced.circleLayers.forEachIndexed { index, layer ->
+            color(layer.color, "advanced.circleLayers[$index].color", errors)
+            range(layer.radius, 0.01, 64.0, "advanced.circleLayers[$index].radius", errors)
+            range(layer.segments, 8, 512, "advanced.circleLayers[$index].segments", errors)
+        }
+        advanced.radialBursts.forEachIndexed { index, burst ->
+            color(burst.colorStart, "advanced.radialBursts[$index].color.start", errors)
+            color(burst.colorEnd, "advanced.radialBursts[$index].color.end", errors)
+            range(burst.rays, 0, 256, "advanced.radialBursts[$index].rays", errors)
+            identifier(burst.texture, "advanced.radialBursts[$index].texture", errors)
+        }
     }
 
     private fun identifier(value: String, path: String, errors: MutableList<Component>) {

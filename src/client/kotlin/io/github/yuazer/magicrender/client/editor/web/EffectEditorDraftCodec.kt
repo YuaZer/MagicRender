@@ -1,17 +1,25 @@
 package io.github.yuazer.magicrender.client.editor.web
 
 import com.google.gson.JsonObject
+import io.github.yuazer.magicrender.client.editor.AdvancedDraft
 import io.github.yuazer.magicrender.client.editor.BeamDraft
+import io.github.yuazer.magicrender.client.editor.BloomApproximationDraft
+import io.github.yuazer.magicrender.client.editor.CircleLayerDraft
 import io.github.yuazer.magicrender.client.editor.ComponentDrafts
+import io.github.yuazer.magicrender.client.editor.CoreGlowDraft
 import io.github.yuazer.magicrender.client.editor.EffectEditorDraft
 import io.github.yuazer.magicrender.client.editor.MagicCircleDraft
+import io.github.yuazer.magicrender.client.editor.ParticleEmitterDraft
 import io.github.yuazer.magicrender.client.editor.PreviewDraft
+import io.github.yuazer.magicrender.client.editor.RadialBurstDraft
+import io.github.yuazer.magicrender.client.editor.RibbonBundleDraft
 import io.github.yuazer.magicrender.client.editor.TrailDraft
 import io.github.yuazer.magicrender.client.editor.TrailMotionDraft
 import io.github.yuazer.magicrender.client.editor.TrailMotionFormulaDraft
 import io.github.yuazer.magicrender.client.editor.VisibilityDraft
 import io.github.yuazer.magicrender.config.boolean
 import io.github.yuazer.magicrender.config.obj
+import io.github.yuazer.magicrender.config.objectList
 import io.github.yuazer.magicrender.config.string
 
 object EffectEditorDraftCodec {
@@ -45,7 +53,8 @@ object EffectEditorDraftCodec {
             components = ComponentDrafts(
                 trail = trail(componentsJson?.obj("trail"), default.components.trail),
                 beam = beam(componentsJson?.obj("beam"), default.components.beam),
-                magicCircle = circle(componentsJson?.obj("magicCircle"), default.components.magicCircle)
+                magicCircle = circle(componentsJson?.obj("magicCircle"), default.components.magicCircle),
+                advanced = advanced(componentsJson?.obj("advanced"), default.components.advanced)
             ),
             preview = preview(json.obj("preview"), default.preview)
         )
@@ -138,6 +147,118 @@ object EffectEditorDraftCodec {
             sourceHeightOffset = json.doubleLoose("sourceHeightOffset", default.sourceHeightOffset),
             targetHeightOffset = json.doubleLoose("targetHeightOffset", default.targetHeightOffset),
             fallbackToFixedDistance = json.boolean("fallbackToFixedDistance", default.fallbackToFixedDistance)
+        )
+    }
+
+    private fun advanced(json: JsonObject?, default: AdvancedDraft): AdvancedDraft {
+        if (json == null) return default
+        return AdvancedDraft(
+            enabled = json.boolean("enabled", default.enabled),
+            bloom = bloom(json.obj("bloom"), default.bloom),
+            core = core(json.obj("core"), default.core),
+            particleEmitters = json.objectList("particleEmitters").map { particleEmitter(it, ParticleEmitterDraft()) }.toMutableList(),
+            ribbonBundles = json.objectList("ribbonBundles").map { ribbonBundle(it, RibbonBundleDraft()) }.toMutableList(),
+            circleLayers = json.objectList("circleLayers").map { circleLayer(it, CircleLayerDraft()) }.toMutableList(),
+            radialBursts = json.objectList("radialBursts").map { radialBurst(it, RadialBurstDraft()) }.toMutableList()
+        )
+    }
+
+    private fun bloom(json: JsonObject?, default: BloomApproximationDraft): BloomApproximationDraft {
+        if (json == null) return default
+        return BloomApproximationDraft(
+            enabled = json.boolean("enabled", default.enabled),
+            layers = json.intLoose("layers", default.layers),
+            scaleStep = json.doubleLoose("scaleStep", default.scaleStep),
+            alphaFalloff = json.doubleLoose("alphaFalloff", default.alphaFalloff)
+        )
+    }
+
+    private fun core(json: JsonObject?, default: CoreGlowDraft): CoreGlowDraft {
+        if (json == null) return default
+        return CoreGlowDraft(
+            enabled = json.boolean("enabled", default.enabled),
+            color = json.string("color", default.color),
+            radius = json.doubleLoose("radius", default.radius),
+            pulseAmplitude = json.doubleLoose("pulseAmplitude", default.pulseAmplitude),
+            pulseSpeed = json.doubleLoose("pulseSpeed", default.pulseSpeed),
+            texture = json.string("texture", default.texture),
+            blendMode = json.string("blendMode", default.blendMode)
+        )
+    }
+
+    private fun particleEmitter(json: JsonObject, default: ParticleEmitterDraft): ParticleEmitterDraft {
+        val color = json.obj("color")
+        val size = json.obj("size")
+        return ParticleEmitterDraft(
+            enabled = json.boolean("enabled", default.enabled),
+            shape = json.string("shape", default.shape),
+            count = json.intLoose("count", default.count),
+            colorStart = color?.string("start", default.colorStart) ?: json.string("colorStart", default.colorStart),
+            colorEnd = color?.string("end", default.colorEnd) ?: json.string("colorEnd", default.colorEnd),
+            sizeStart = size?.doubleLoose("start", default.sizeStart) ?: json.doubleLoose("sizeStart", default.sizeStart),
+            sizeEnd = size?.doubleLoose("end", default.sizeEnd) ?: json.doubleLoose("sizeEnd", default.sizeEnd),
+            radius = json.doubleLoose("radius", default.radius),
+            height = json.doubleLoose("height", default.height),
+            speed = json.doubleLoose("speed", default.speed),
+            swirlSpeed = json.doubleLoose("swirlSpeed", default.swirlSpeed),
+            noise = json.doubleLoose("noise", default.noise),
+            texture = json.string("texture", default.texture),
+            blendMode = json.string("blendMode", default.blendMode)
+        )
+    }
+
+    private fun ribbonBundle(json: JsonObject, default: RibbonBundleDraft): RibbonBundleDraft {
+        val color = json.obj("color")
+        val width = json.obj("width")
+        return RibbonBundleDraft(
+            enabled = json.boolean("enabled", default.enabled),
+            count = json.intLoose("count", default.count),
+            widthStart = width?.doubleLoose("start", default.widthStart) ?: json.doubleLoose("widthStart", default.widthStart),
+            widthEnd = width?.doubleLoose("end", default.widthEnd) ?: json.doubleLoose("widthEnd", default.widthEnd),
+            colorStart = color?.string("start", default.colorStart) ?: json.string("colorStart", default.colorStart),
+            colorEnd = color?.string("end", default.colorEnd) ?: json.string("colorEnd", default.colorEnd),
+            length = json.doubleLoose("length", default.length),
+            samples = json.intLoose("samples", default.samples),
+            phaseStep = json.doubleLoose("phaseStep", default.phaseStep),
+            amplitude = json.doubleLoose("amplitude", default.amplitude),
+            frequency = json.doubleLoose("frequency", default.frequency),
+            twist = json.doubleLoose("twist", default.twist),
+            flowSpeed = json.doubleLoose("flowSpeed", default.flowSpeed),
+            texture = json.string("texture", default.texture),
+            blendMode = json.string("blendMode", default.blendMode)
+        )
+    }
+
+    private fun circleLayer(json: JsonObject, default: CircleLayerDraft): CircleLayerDraft {
+        return CircleLayerDraft(
+            enabled = json.boolean("enabled", default.enabled),
+            radius = json.doubleLoose("radius", default.radius),
+            thickness = json.doubleLoose("thickness", default.thickness),
+            color = json.string("color", default.color),
+            segments = json.intLoose("segments", default.segments),
+            rotationSpeed = json.doubleLoose("rotationSpeed", default.rotationSpeed),
+            glyphs = json.intLoose("glyphs", default.glyphs),
+            glyphMode = json.string("glyphMode", default.glyphMode),
+            facing = json.string("facing", default.facing),
+            blendMode = json.string("blendMode", default.blendMode)
+        )
+    }
+
+    private fun radialBurst(json: JsonObject, default: RadialBurstDraft): RadialBurstDraft {
+        val color = json.obj("color")
+        val width = json.obj("width")
+        return RadialBurstDraft(
+            enabled = json.boolean("enabled", default.enabled),
+            rays = json.intLoose("rays", default.rays),
+            length = json.doubleLoose("length", default.length),
+            widthStart = width?.doubleLoose("start", default.widthStart) ?: json.doubleLoose("widthStart", default.widthStart),
+            widthEnd = width?.doubleLoose("end", default.widthEnd) ?: json.doubleLoose("widthEnd", default.widthEnd),
+            colorStart = color?.string("start", default.colorStart) ?: json.string("colorStart", default.colorStart),
+            colorEnd = color?.string("end", default.colorEnd) ?: json.string("colorEnd", default.colorEnd),
+            rotationSpeed = json.doubleLoose("rotationSpeed", default.rotationSpeed),
+            randomJitter = json.doubleLoose("randomJitter", default.randomJitter),
+            texture = json.string("texture", default.texture),
+            blendMode = json.string("blendMode", default.blendMode)
         )
     }
 

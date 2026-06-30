@@ -27,6 +27,12 @@ fun JsonObject.obj(name: String): JsonObject? {
     return if (element.isJsonObject) element.asJsonObject else null
 }
 
+fun JsonObject.objectList(name: String): List<JsonObject> {
+    val element = get(name) ?: return emptyList()
+    if (!element.isJsonArray) return emptyList()
+    return element.asJsonArray.mapNotNull { if (it.isJsonObject) it.asJsonObject else null }
+}
+
 fun JsonObject.string(name: String, default: String): String {
     val element = get(name) ?: return default
     return if (element.isJsonPrimitive) element.asString else default

@@ -66,6 +66,7 @@ data class EffectComponents(
     val beam: BeamComponent = BeamComponent(enabled = false),
     val trail: TrailComponent = TrailComponent(enabled = false),
     val shockwave: ShockwaveComponent = ShockwaveComponent(enabled = false),
+    val advanced: AdvancedVisualComponent = AdvancedVisualComponent(enabled = false),
     val sound: SoundComponent = SoundComponent(enabled = false)
 ) {
     companion object {
@@ -78,6 +79,7 @@ data class EffectComponents(
                 beam = BeamComponent.parse(json.obj("beam"), "$path.beam", result),
                 trail = TrailComponent.parse(json.obj("trail"), "$path.trail", result),
                 shockwave = ShockwaveComponent.parse(json.obj("shockwave"), "$path.shockwave", result),
+                advanced = AdvancedVisualComponent.parse(json.obj("advanced"), common, "$path.advanced", result),
                 sound = SoundComponent.parse(json.obj("sound"), "$path.sound", result)
             )
         }
@@ -294,6 +296,235 @@ data class ShockwaveComponent(
             return ShockwaveComponent(
                 enabled = json.boolean("enabled", false),
                 strength = json.double("strength", 0.35, 0.0, 1.0, path, result)
+            )
+        }
+    }
+}
+
+data class AdvancedVisualComponent(
+    val enabled: Boolean,
+    val bloom: BloomApproximationComponent = BloomApproximationComponent(),
+    val core: CoreGlowComponent = CoreGlowComponent(enabled = false),
+    val particleEmitters: List<ParticleEmitterComponent> = emptyList(),
+    val ribbonBundles: List<RibbonBundleComponent> = emptyList(),
+    val circleLayers: List<CircleLayerComponent> = emptyList(),
+    val radialBursts: List<RadialBurstComponent> = emptyList()
+) {
+    companion object {
+        fun parse(json: JsonObject?, common: CommonConfig, path: String, result: ConfigLoadAccumulator): AdvancedVisualComponent {
+            if (json == null) return AdvancedVisualComponent(enabled = false)
+            return AdvancedVisualComponent(
+                enabled = json.boolean("enabled", true),
+                bloom = BloomApproximationComponent.parse(json.obj("bloom"), "$path.bloom", result),
+                core = CoreGlowComponent.parse(json.obj("core"), "$path.core", result),
+                particleEmitters = json.objectList("particleEmitters").take(8).mapIndexed { index, item ->
+                    ParticleEmitterComponent.parse(item, common, "$path.particleEmitters[$index]", result)
+                },
+                ribbonBundles = json.objectList("ribbonBundles").take(8).mapIndexed { index, item ->
+                    RibbonBundleComponent.parse(item, "$path.ribbonBundles[$index]", result)
+                },
+                circleLayers = json.objectList("circleLayers").take(12).mapIndexed { index, item ->
+                    CircleLayerComponent.parse(item, "$path.circleLayers[$index]", result)
+                },
+                radialBursts = json.objectList("radialBursts").take(8).mapIndexed { index, item ->
+                    RadialBurstComponent.parse(item, "$path.radialBursts[$index]", result)
+                }
+            )
+        }
+    }
+}
+
+data class BloomApproximationComponent(
+    val enabled: Boolean = true,
+    val layers: Int = 3,
+    val scaleStep: Double = 1.8,
+    val alphaFalloff: Double = 0.45
+) {
+    companion object {
+        fun parse(json: JsonObject?, path: String, result: ConfigLoadAccumulator): BloomApproximationComponent {
+            if (json == null) return BloomApproximationComponent()
+            return BloomApproximationComponent(
+                enabled = json.boolean("enabled", true),
+                layers = json.int("layers", 3, 0, 8, path, result),
+                scaleStep = json.double("scaleStep", 1.8, 1.0, 6.0, path, result),
+                alphaFalloff = json.double("alphaFalloff", 0.45, 0.05, 1.0, path, result)
+            )
+        }
+    }
+}
+
+data class CoreGlowComponent(
+    val enabled: Boolean,
+    val color: String = "#FFFFFFFF",
+    val radius: Double = 0.6,
+    val pulseAmplitude: Double = 0.18,
+    val pulseSpeed: Double = 0.12,
+    val texture: String = "minecraft:textures/particle/flash.png",
+    val blendMode: String = "additive"
+) {
+    companion object {
+        fun parse(json: JsonObject?, path: String, result: ConfigLoadAccumulator): CoreGlowComponent {
+            if (json == null) return CoreGlowComponent(enabled = false)
+            return CoreGlowComponent(
+                enabled = json.boolean("enabled", true),
+                color = parseColor(json.string("color", "#FFFFFFFF"), path, result),
+                radius = json.double("radius", 0.6, 0.01, 16.0, path, result),
+                pulseAmplitude = json.double("pulseAmplitude", 0.18, 0.0, 4.0, path, result),
+                pulseSpeed = json.double("pulseSpeed", 0.12, -4.0, 4.0, path, result),
+                texture = validResourceOrDefault(json.string("texture", "minecraft:textures/particle/flash.png"), "minecraft:textures/particle/flash.png", "$path.texture", result),
+                blendMode = json.string("blendMode", "additive")
+            )
+        }
+    }
+}
+
+data class ParticleEmitterComponent(
+    val enabled: Boolean = true,
+    val shape: String = "sphere",
+    val count: Int = 96,
+    val colorStart: String = "#FFFFFFFF",
+    val colorEnd: String = "#FFFFFFFF",
+    val sizeStart: Double = 0.08,
+    val sizeEnd: Double = 0.02,
+    val radius: Double = 1.2,
+    val height: Double = 2.0,
+    val speed: Double = 0.02,
+    val swirlSpeed: Double = 0.0,
+    val noise: Double = 0.2,
+    val texture: String = "minecraft:textures/particle/flash.png",
+    val blendMode: String = "additive"
+) {
+    companion object {
+        fun parse(json: JsonObject, common: CommonConfig, path: String, result: ConfigLoadAccumulator): ParticleEmitterComponent {
+            val colorJson = json.obj("color")
+            val sizeJson = json.obj("size")
+            val fallbackColor = parseColor(json.string("color", "#FFFFFFFF"), path, result)
+            val fallbackSize = json.double("size", 0.08, 0.005, 4.0, path, result)
+            return ParticleEmitterComponent(
+                enabled = json.boolean("enabled", true),
+                shape = json.string("shape", "sphere"),
+                count = json.int("count", 96, 0, common.limits.maxParticlesPerEffect, path, result),
+                colorStart = parseColor(colorJson?.string("start", fallbackColor) ?: json.string("colorStart", fallbackColor), "$path.color", result),
+                colorEnd = parseColor(colorJson?.string("end", fallbackColor) ?: json.string("colorEnd", fallbackColor), "$path.color", result),
+                sizeStart = sizeJson?.double("start", fallbackSize, 0.005, 4.0, "$path.size", result) ?: json.double("sizeStart", fallbackSize, 0.005, 4.0, path, result),
+                sizeEnd = sizeJson?.double("end", fallbackSize * 0.35, 0.0, 4.0, "$path.size", result) ?: json.double("sizeEnd", fallbackSize * 0.35, 0.0, 4.0, path, result),
+                radius = json.double("radius", 1.2, 0.0, 64.0, path, result),
+                height = json.double("height", 2.0, 0.0, 64.0, path, result),
+                speed = json.double("speed", 0.02, -4.0, 4.0, path, result),
+                swirlSpeed = json.double("swirlSpeed", 0.0, -16.0, 16.0, path, result),
+                noise = json.double("noise", 0.2, 0.0, 16.0, path, result),
+                texture = validResourceOrDefault(json.string("texture", "minecraft:textures/particle/flash.png"), "minecraft:textures/particle/flash.png", "$path.texture", result),
+                blendMode = json.string("blendMode", "additive")
+            )
+        }
+    }
+}
+
+data class RibbonBundleComponent(
+    val enabled: Boolean = true,
+    val count: Int = 8,
+    val widthStart: Double = 0.12,
+    val widthEnd: Double = 0.02,
+    val colorStart: String = "#FFFFFFFF",
+    val colorEnd: String = "#FFFFFFFF",
+    val length: Double = 8.0,
+    val samples: Int = 96,
+    val phaseStep: Double = 24.0,
+    val amplitude: Double = 0.8,
+    val frequency: Double = 1.4,
+    val twist: Double = 0.45,
+    val flowSpeed: Double = 0.08,
+    val texture: String = "minecraft:textures/particle/flame.png",
+    val blendMode: String = "additive"
+) {
+    companion object {
+        fun parse(json: JsonObject, path: String, result: ConfigLoadAccumulator): RibbonBundleComponent {
+            val colorJson = json.obj("color")
+            val widthJson = json.obj("width")
+            val fallbackColor = parseColor(json.string("color", "#FFFFFFFF"), path, result)
+            val fallbackWidth = json.double("width", 0.12, 0.005, 8.0, path, result)
+            return RibbonBundleComponent(
+                enabled = json.boolean("enabled", true),
+                count = json.int("count", 8, 0, 64, path, result),
+                widthStart = widthJson?.double("start", fallbackWidth, 0.005, 8.0, "$path.width", result) ?: json.double("widthStart", fallbackWidth, 0.005, 8.0, path, result),
+                widthEnd = widthJson?.double("end", fallbackWidth * 0.35, 0.0, 8.0, "$path.width", result) ?: json.double("widthEnd", fallbackWidth * 0.35, 0.0, 8.0, path, result),
+                colorStart = parseColor(colorJson?.string("start", fallbackColor) ?: json.string("colorStart", fallbackColor), "$path.color", result),
+                colorEnd = parseColor(colorJson?.string("end", fallbackColor) ?: json.string("colorEnd", fallbackColor), "$path.color", result),
+                length = json.double("length", 8.0, 0.1, 128.0, path, result),
+                samples = json.int("samples", 96, 2, 256, path, result),
+                phaseStep = json.double("phaseStep", 24.0, -360.0, 360.0, path, result),
+                amplitude = json.double("amplitude", 0.8, 0.0, 32.0, path, result),
+                frequency = json.double("frequency", 1.4, 0.0, 32.0, path, result),
+                twist = json.double("twist", 0.45, -16.0, 16.0, path, result),
+                flowSpeed = json.double("flowSpeed", 0.08, -8.0, 8.0, path, result),
+                texture = validResourceOrDefault(json.string("texture", "minecraft:textures/particle/flame.png"), "minecraft:textures/particle/flame.png", "$path.texture", result),
+                blendMode = json.string("blendMode", "additive")
+            )
+        }
+    }
+}
+
+data class CircleLayerComponent(
+    val enabled: Boolean = true,
+    val radius: Double = 2.0,
+    val thickness: Double = 0.04,
+    val color: String = "#FFFFFFFF",
+    val segments: Int = 128,
+    val rotationSpeed: Double = 1.0,
+    val glyphs: Int = 0,
+    val glyphMode: String = "ticks",
+    val facing: String = "face_camera",
+    val blendMode: String = "additive"
+) {
+    companion object {
+        fun parse(json: JsonObject, path: String, result: ConfigLoadAccumulator): CircleLayerComponent {
+            return CircleLayerComponent(
+                enabled = json.boolean("enabled", true),
+                radius = json.double("radius", 2.0, 0.01, 64.0, path, result),
+                thickness = json.double("thickness", 0.04, 0.005, 4.0, path, result),
+                color = parseColor(json.string("color", "#FFFFFFFF"), path, result),
+                segments = json.int("segments", 128, 8, 512, path, result),
+                rotationSpeed = json.double("rotationSpeed", 1.0, -32.0, 32.0, path, result),
+                glyphs = json.int("glyphs", 0, 0, 256, path, result),
+                glyphMode = json.string("glyphMode", "ticks"),
+                facing = json.string("facing", "face_camera"),
+                blendMode = json.string("blendMode", "additive")
+            )
+        }
+    }
+}
+
+data class RadialBurstComponent(
+    val enabled: Boolean = true,
+    val rays: Int = 16,
+    val length: Double = 2.8,
+    val widthStart: Double = 0.08,
+    val widthEnd: Double = 0.0,
+    val colorStart: String = "#FFFFFFFF",
+    val colorEnd: String = "#FFFFFF00",
+    val rotationSpeed: Double = 0.0,
+    val randomJitter: Double = 0.15,
+    val texture: String = "minecraft:textures/particle/flash.png",
+    val blendMode: String = "additive"
+) {
+    companion object {
+        fun parse(json: JsonObject, path: String, result: ConfigLoadAccumulator): RadialBurstComponent {
+            val colorJson = json.obj("color")
+            val widthJson = json.obj("width")
+            val fallbackColor = parseColor(json.string("color", "#FFFFFFFF"), path, result)
+            val fallbackWidth = json.double("width", 0.08, 0.005, 8.0, path, result)
+            return RadialBurstComponent(
+                enabled = json.boolean("enabled", true),
+                rays = json.int("rays", 16, 0, 256, path, result),
+                length = json.double("length", 2.8, 0.0, 64.0, path, result),
+                widthStart = widthJson?.double("start", fallbackWidth, 0.005, 8.0, "$path.width", result) ?: json.double("widthStart", fallbackWidth, 0.005, 8.0, path, result),
+                widthEnd = widthJson?.double("end", 0.0, 0.0, 8.0, "$path.width", result) ?: json.double("widthEnd", 0.0, 0.0, 8.0, path, result),
+                colorStart = parseColor(colorJson?.string("start", fallbackColor) ?: json.string("colorStart", fallbackColor), "$path.color", result),
+                colorEnd = parseColor(colorJson?.string("end", "#FFFFFF00") ?: json.string("colorEnd", "#FFFFFF00"), "$path.color", result),
+                rotationSpeed = json.double("rotationSpeed", 0.0, -32.0, 32.0, path, result),
+                randomJitter = json.double("randomJitter", 0.15, 0.0, 1.0, path, result),
+                texture = validResourceOrDefault(json.string("texture", "minecraft:textures/particle/flash.png"), "minecraft:textures/particle/flash.png", "$path.texture", result),
+                blendMode = json.string("blendMode", "additive")
             )
         }
     }

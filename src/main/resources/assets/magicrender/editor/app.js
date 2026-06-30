@@ -28,12 +28,14 @@ const translations = {
     motion: "Motion",
     circle: "Magic Circle",
     beam: "Beam",
+    advanced: "Advanced",
     previewPage: "Preview",
     basicHint: "Edit effect metadata and shared visibility.",
     trailHint: "Ribbon trail shape, color and sampling.",
     motionHint: "Orbit, helix and custom formula motion layer.",
     circleHint: "Arcane circle attached to the preview source.",
     beamHint: "Beam from source to target point or entity.",
+    advancedHint: "Layered glow, point clouds, flowing ribbon bundles, circle layers and radial burst rays.",
     previewHint: "Editor-only preview target and distance settings.",
     effectId: "Effect Id",
     enabled: "Enabled",
@@ -81,6 +83,29 @@ const translations = {
     sourceHeight: "Source Height Offset",
     targetHeight: "Target Height Offset",
     fallbackDistance: "Fallback To Fixed Distance"
+    ,advancedEnabled: "Advanced Enabled",
+    bloomLayers: "Bloom Layers",
+    bloomScaleStep: "Bloom Scale Step",
+    bloomAlphaFalloff: "Bloom Alpha Falloff",
+    coreEnabled: "Core Glow Enabled",
+    coreRadius: "Core Radius",
+    corePulseAmplitude: "Core Pulse",
+    emitterCount: "Emitter Count",
+    emitterShape: "Emitter Shape",
+    emitterSizeStart: "Particle Size Start",
+    emitterSizeEnd: "Particle Size End",
+    emitterHeight: "Emitter Height",
+    emitterSwirl: "Emitter Swirl",
+    bundleCount: "Ribbon Count",
+    bundleLength: "Ribbon Length",
+    bundleAmplitude: "Ribbon Amplitude",
+    bundleFrequency: "Ribbon Frequency",
+    bundleTwist: "Ribbon Twist",
+    bundleFlow: "Ribbon Flow",
+    circleLayerRadius: "Layer Radius",
+    circleLayerGlyphs: "Layer Glyphs",
+    burstRays: "Burst Rays",
+    burstLength: "Burst Length"
   },
   zh: {
     appSubtitle: "特效编辑器",
@@ -108,12 +133,14 @@ const translations = {
     motion: "运动",
     circle: "法阵",
     beam: "光束",
+    advanced: "高级",
     previewPage: "预览",
     basicHint: "编辑特效元数据和通用可见性。",
     trailHint: "设置拖尾轨迹的形状、颜色和采样。",
     motionHint: "设置环绕、螺旋和自定义公式运动。",
     circleHint: "附着在预览源点上的法阵。",
     beamHint: "从源点指向目标点或实体的光束。",
+    advancedHint: "分层泛光、点云粒子、渐变流光束、多层法阵和放射光刺。",
     previewHint: "编辑器专用的预览目标和距离设置。",
     effectId: "特效 ID",
     enabled: "启用",
@@ -160,7 +187,30 @@ const translations = {
     fixedDistance: "固定距离",
     sourceHeight: "源点高度偏移",
     targetHeight: "目标高度偏移",
-    fallbackDistance: "无目标时回退固定距离"
+    fallbackDistance: "无目标时回退固定距离",
+    advancedEnabled: "启用高级效果",
+    bloomLayers: "泛光层数",
+    bloomScaleStep: "泛光放大倍率",
+    bloomAlphaFalloff: "泛光透明衰减",
+    coreEnabled: "启用核心光团",
+    coreRadius: "核心半径",
+    corePulseAmplitude: "核心脉冲",
+    emitterCount: "粒子数量",
+    emitterShape: "发射器形状",
+    emitterSizeStart: "粒子起始大小",
+    emitterSizeEnd: "粒子结束大小",
+    emitterHeight: "发射高度",
+    emitterSwirl: "旋转速度",
+    bundleCount: "流光数量",
+    bundleLength: "流光长度",
+    bundleAmplitude: "流光振幅",
+    bundleFrequency: "流光频率",
+    bundleTwist: "流光扭转",
+    bundleFlow: "流动速度",
+    circleLayerRadius: "法阵层半径",
+    circleLayerGlyphs: "法阵层符文数",
+    burstRays: "光刺数量",
+    burstLength: "光刺长度"
   }
 };
 
@@ -299,6 +349,7 @@ const pages = [
   { id: "motion", title: "motion", hint: "motionHint" },
   { id: "circle", title: "circle", hint: "circleHint" },
   { id: "beam", title: "beam", hint: "beamHint" },
+  { id: "advanced", title: "advanced", hint: "advancedHint" },
   { id: "preview", title: "previewPage", hint: "previewHint" }
 ];
 
@@ -377,6 +428,35 @@ const fields = {
     ["components.beam.texture", "texture", "text"],
     ["components.beam.blendMode", "blendMode", "select", ["additive", "alpha"]]
   ],
+  advanced: [
+    ["components.advanced.enabled", "advancedEnabled", "checkbox"],
+    ["components.advanced.bloom.layers", "bloomLayers", "number"],
+    ["components.advanced.bloom.scaleStep", "bloomScaleStep", "number"],
+    ["components.advanced.bloom.alphaFalloff", "bloomAlphaFalloff", "number"],
+    ["components.advanced.core.enabled", "coreEnabled", "checkbox"],
+    ["components.advanced.core.color", "colorStart", "color"],
+    ["components.advanced.core.radius", "coreRadius", "number"],
+    ["components.advanced.core.pulseAmplitude", "corePulseAmplitude", "number"],
+    ["components.advanced.particleEmitters.0.shape", "emitterShape", "select", ["sphere", "column", "ring", "box"]],
+    ["components.advanced.particleEmitters.0.count", "emitterCount", "number"],
+    ["components.advanced.particleEmitters.0.color.start", "colorStart", "color"],
+    ["components.advanced.particleEmitters.0.color.end", "colorEnd", "color"],
+    ["components.advanced.particleEmitters.0.size.start", "emitterSizeStart", "number"],
+    ["components.advanced.particleEmitters.0.size.end", "emitterSizeEnd", "number"],
+    ["components.advanced.particleEmitters.0.radius", "radius", "number"],
+    ["components.advanced.particleEmitters.0.height", "emitterHeight", "number"],
+    ["components.advanced.particleEmitters.0.swirlSpeed", "emitterSwirl", "number"],
+    ["components.advanced.ribbonBundles.0.count", "bundleCount", "number"],
+    ["components.advanced.ribbonBundles.0.length", "bundleLength", "number"],
+    ["components.advanced.ribbonBundles.0.amplitude", "bundleAmplitude", "number"],
+    ["components.advanced.ribbonBundles.0.frequency", "bundleFrequency", "number"],
+    ["components.advanced.ribbonBundles.0.twist", "bundleTwist", "number"],
+    ["components.advanced.ribbonBundles.0.flowSpeed", "bundleFlow", "number"],
+    ["components.advanced.circleLayers.0.radius", "circleLayerRadius", "number"],
+    ["components.advanced.circleLayers.0.glyphs", "circleLayerGlyphs", "number"],
+    ["components.advanced.radialBursts.0.rays", "burstRays", "number"],
+    ["components.advanced.radialBursts.0.length", "burstLength", "number"]
+  ],
   preview: [
     ["preview.targetMode", "targetMode", "select", ["fixed_distance", "crosshair_entity", "look_point"]],
     ["preview.fixedDistance", "fixedDistance", "number"],
@@ -433,6 +513,7 @@ function renderTabs() {
 }
 
 function renderForm() {
+  ensureAdvancedDefaults();
   const meta = pages.find((p) => p.id === page);
   $("pageTitle").textContent = t(meta.title);
   $("pageHint").textContent = t(meta.hint);
@@ -485,6 +566,23 @@ function renderForm() {
     wrap.appendChild(input);
     form.appendChild(wrap);
   }
+}
+
+function ensureAdvancedDefaults() {
+  state.components ??= {};
+  state.components.advanced ??= {};
+  const advanced = state.components.advanced;
+  advanced.enabled ??= false;
+  advanced.bloom ??= { enabled: true, layers: 3, scaleStep: 1.8, alphaFalloff: 0.45 };
+  advanced.core ??= { enabled: false, color: "#FFFFFFFF", radius: 0.6, pulseAmplitude: 0.18, pulseSpeed: 0.12, texture: "minecraft:textures/particle/flash.png", blendMode: "additive" };
+  advanced.particleEmitters ??= [];
+  advanced.ribbonBundles ??= [];
+  advanced.circleLayers ??= [];
+  advanced.radialBursts ??= [];
+  advanced.particleEmitters[0] ??= { enabled: true, shape: "sphere", count: 96, color: { start: "#FFFFFFFF", end: "#FFFFFFFF" }, size: { start: 0.08, end: 0.02 }, radius: 1.2, height: 2.0, speed: 0.02, swirlSpeed: 0, noise: 0.2, texture: "minecraft:textures/particle/flash.png", blendMode: "additive" };
+  advanced.ribbonBundles[0] ??= { enabled: true, count: 8, width: { start: 0.12, end: 0.02 }, color: { start: "#FFFFFFFF", end: "#FFFFFFFF" }, length: 8, samples: 96, phaseStep: 24, amplitude: 0.8, frequency: 1.4, twist: 0.45, flowSpeed: 0.08, texture: "minecraft:textures/particle/flame.png", blendMode: "additive" };
+  advanced.circleLayers[0] ??= { enabled: true, radius: 2, thickness: 0.04, color: "#FFFFFFFF", segments: 128, rotationSpeed: 1, glyphs: 12, glyphMode: "ticks", facing: "face_camera", blendMode: "additive" };
+  advanced.radialBursts[0] ??= { enabled: true, rays: 16, length: 2.8, width: { start: 0.08, end: 0 }, color: { start: "#FFFFFFFF", end: "#FFFFFF00" }, rotationSpeed: 0, randomJitter: 0.15, texture: "minecraft:textures/particle/flash.png", blendMode: "additive" };
 }
 
 function updateJson() {
@@ -573,6 +671,7 @@ function rebuildPreview3d() {
   if (state.components.beam.enabled) addBeam(view.root, source, target);
   if (state.components.trail.enabled) addTrail(view.root, source);
   if (state.components.magicCircle.enabled) addMagicCircle(view, source);
+  if (state.components.advanced?.enabled) addAdvanced(view, source, target);
 }
 
 function addPoint(root, position, color) {
@@ -637,6 +736,144 @@ function addMagicCircle(view, source) {
     marker.rotation.y = -angle;
     view.root.add(marker);
   }
+}
+
+function addAdvanced(view, source, target) {
+  ensureAdvancedDefaults();
+  const advanced = state.components.advanced;
+  if (advanced.core?.enabled) addCoreGlow(view.root, source, advanced.core, advanced.bloom);
+  for (const emitter of advanced.particleEmitters ?? []) {
+    if (emitter.enabled !== false) addParticleEmitter(view.root, source, emitter, advanced.bloom);
+  }
+  for (const bundle of advanced.ribbonBundles ?? []) {
+    if (bundle.enabled !== false) addRibbonBundle(view.root, source, target, bundle);
+  }
+  for (const layer of advanced.circleLayers ?? []) {
+    if (layer.enabled !== false) addCircleLayer(view, source, layer);
+  }
+  for (const burst of advanced.radialBursts ?? []) {
+    if (burst.enabled !== false) addRadialBurst(view.root, source, burst);
+  }
+}
+
+function addCoreGlow(root, source, core, bloom) {
+  const color = colorNumber(core.color);
+  const material = new THREE.SpriteMaterial({ color, transparent: true, opacity: alphaValue(core.color), depthWrite: false, blending: THREE.AdditiveBlending });
+  const sprite = new THREE.Sprite(material);
+  const radius = Math.max(0.02, core.radius || 0.6);
+  sprite.position.copy(source);
+  sprite.scale.setScalar(radius * 2);
+  root.add(sprite);
+  addSpriteBloom(root, source, color, radius, bloom, alphaValue(core.color));
+}
+
+function addSpriteBloom(root, position, color, radius, bloom, opacity = 0.35) {
+  if (!bloom?.enabled) return;
+  let size = radius * 2;
+  let alpha = opacity * (bloom.alphaFalloff ?? 0.45);
+  const layers = Math.max(0, Math.min(8, Math.round(bloom.layers ?? 3)));
+  for (let i = 0; i < layers; i++) {
+    size *= bloom.scaleStep ?? 1.8;
+    const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ color, transparent: true, opacity: alpha, depthWrite: false, blending: THREE.AdditiveBlending }));
+    sprite.position.copy(position);
+    sprite.scale.setScalar(size);
+    root.add(sprite);
+    alpha *= bloom.alphaFalloff ?? 0.45;
+  }
+}
+
+function addParticleEmitter(root, source, emitter, bloom) {
+  const count = Math.max(0, Math.min(600, Math.round(emitter.count || 0)));
+  const geometry = new THREE.BufferGeometry();
+  const positions = new Float32Array(count * 3);
+  const colors = new Float32Array(count * 3);
+  const colorStart = new THREE.Color(colorNumber(emitter.color?.start || emitter.colorStart || "#ffffff"));
+  const colorEnd = new THREE.Color(colorNumber(emitter.color?.end || emitter.colorEnd || "#ffffff"));
+  for (let i = 0; i < count; i++) {
+    const seed = randomSeed(i + 1);
+    const p = particlePreviewPosition(source, emitter, seed, i);
+    positions[i * 3] = p.x;
+    positions[i * 3 + 1] = p.y;
+    positions[i * 3 + 2] = p.z;
+    const c = colorStart.clone().lerp(colorEnd, i / Math.max(1, count - 1));
+    colors[i * 3] = c.r;
+    colors[i * 3 + 1] = c.g;
+    colors[i * 3 + 2] = c.b;
+  }
+  geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+  geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+  root.add(new THREE.Points(geometry, new THREE.PointsMaterial({ size: emitter.size?.start || emitter.sizeStart || 0.08, vertexColors: true, transparent: true, opacity: 0.9, depthWrite: false, blending: THREE.AdditiveBlending })));
+  if (bloom?.enabled && count > 0) addSpriteBloom(root, source, colorNumber(emitter.color?.start || emitter.colorStart || "#ffffff"), Math.max(0.15, (emitter.radius || 1.2) * 0.35), bloom, 0.18);
+}
+
+function particlePreviewPosition(source, emitter, seed, index) {
+  const shape = String(emitter.shape || "sphere").toLowerCase();
+  const radius = emitter.radius || 1.2;
+  const height = emitter.height || 2;
+  const angle = seed * Math.PI * 2;
+  const second = randomSeed(index * 17 + 3) * Math.PI * 2;
+  if (shape === "column" || shape === "pillar") return source.clone().add(new THREE.Vector3(Math.cos(angle) * radius, (randomSeed(index + 9) - 0.5) * height, Math.sin(angle) * radius));
+  if (shape === "ring" || shape === "disc") return source.clone().add(new THREE.Vector3(Math.cos(angle) * radius, 0, Math.sin(angle) * radius));
+  if (shape === "box" || shape === "cube") return source.clone().add(new THREE.Vector3((seed - 0.5) * radius * 2, (randomSeed(index + 5) - 0.5) * height, (randomSeed(index + 7) - 0.5) * radius * 2));
+  const r = radius * (0.3 + randomSeed(index + 11) * 0.7);
+  return source.clone().add(new THREE.Vector3(Math.cos(angle) * Math.sin(second) * r, Math.cos(second) * height * 0.5, Math.sin(angle) * Math.sin(second) * r));
+}
+
+function addRibbonBundle(root, source, target, bundle) {
+  const count = Math.max(0, Math.min(48, Math.round(bundle.count || 0)));
+  const direction = target.clone().sub(source).normalize();
+  const side = new THREE.Vector3().crossVectors(direction, new THREE.Vector3(0, 1, 0)).normalize();
+  if (!Number.isFinite(side.x)) side.set(0, 0, 1);
+  const up = new THREE.Vector3().crossVectors(side, direction).normalize();
+  for (let line = 0; line < count; line++) {
+    const points = [];
+    const samples = Math.max(8, Math.min(180, Math.round(bundle.samples || 96)));
+    const phase = line * (bundle.phaseStep || 24) * Math.PI / 180;
+    for (let i = 0; i < samples; i++) {
+      const t = i / (samples - 1);
+      const wave = Math.sin(t * Math.PI * 2 * (bundle.frequency || 1.4) + phase) * (bundle.amplitude || 0.8);
+      const twist = Math.cos(t * Math.PI * 2 * (bundle.frequency || 1.4) + phase) * (bundle.amplitude || 0.8) * (bundle.twist || 0.45);
+      points.push(source.clone().add(direction.clone().multiplyScalar((bundle.length || 8) * t)).add(side.clone().multiplyScalar(wave)).add(up.clone().multiplyScalar(twist)));
+    }
+    root.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(points), new THREE.LineBasicMaterial({ color: colorNumber(bundle.color?.start || bundle.colorStart || "#ffffff"), transparent: true, opacity: 0.85, blending: THREE.AdditiveBlending })));
+    addTubeLikeMarkers(root, points, Math.max(0.008, (bundle.width?.start || bundle.widthStart || 0.1) * 0.08), colorNumber(bundle.color?.end || bundle.colorEnd || "#ffffff"));
+  }
+}
+
+function addCircleLayer(view, source, layer) {
+  const color = colorNumber(layer.color || "#ffffff");
+  const mesh = new THREE.Mesh(
+    new THREE.TorusGeometry(Math.max(0.05, layer.radius || 1), Math.max(0.006, layer.thickness || 0.03), 8, Math.max(16, Math.round(layer.segments || 96))),
+    new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.5, transparent: true, opacity: alphaValue(layer.color || "#ffffff"), blending: THREE.AdditiveBlending })
+  );
+  mesh.position.copy(source);
+  if (layer.facing === "horizontal") mesh.rotation.x = Math.PI / 2;
+  mesh.userData.spin = (layer.rotationSpeed || 0) * Math.PI / 180 / 8;
+  view.root.add(mesh);
+  view.animated.push(mesh);
+  const glyphs = Math.max(0, Math.min(96, Math.round(layer.glyphs || 0)));
+  for (let i = 0; i < glyphs; i++) {
+    const angle = i / glyphs * Math.PI * 2;
+    const marker = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.015, 0.22), new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.45, transparent: true, blending: THREE.AdditiveBlending }));
+    marker.position.set(source.x + Math.cos(angle) * layer.radius, source.y, source.z + Math.sin(angle) * layer.radius);
+    marker.rotation.y = -angle;
+    view.root.add(marker);
+  }
+}
+
+function addRadialBurst(root, source, burst) {
+  const rays = Math.max(0, Math.min(128, Math.round(burst.rays || 0)));
+  for (let i = 0; i < rays; i++) {
+    const jitter = (randomSeed(i + 31) - 0.5) * (burst.randomJitter || 0.15);
+    const angle = i / Math.max(1, rays) * Math.PI * 2 + jitter;
+    const end = source.clone().add(new THREE.Vector3(Math.cos(angle) * (burst.length || 2.8), Math.sin(angle * 1.7) * (burst.length || 2.8) * 0.15, Math.sin(angle) * (burst.length || 2.8)));
+    root.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([source, end]), new THREE.LineBasicMaterial({ color: colorNumber(burst.color?.start || burst.colorStart || "#ffffff"), transparent: true, opacity: 0.85, blending: THREE.AdditiveBlending })));
+  }
+}
+
+function randomSeed(value) {
+  const x = Math.sin(value * 12.9898) * 43758.5453;
+  return x - Math.floor(x);
 }
 
 function buildTrailPoints(source) {
