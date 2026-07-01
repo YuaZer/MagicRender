@@ -66,6 +66,19 @@ object MagicRenderCommands {
                             })
                     )
                     .then(
+                        Commands.literal("group")
+                            .then(groupArgument { source, groupKey ->
+                                val player = source.playerOrException
+                                val requestId = MagicRenderServerApi.playGroup(player, groupKey, player)
+                                if (requestId == 0L) {
+                                    source.sendFailure(tr("magicrender.command.play_group.not_loaded", groupKey))
+                                    return@groupArgument 0
+                                }
+                                source.sendSuccess({ tr("magicrender.command.play_group.sent", groupKey, requestId) }, false)
+                                Command.SINGLE_SUCCESS
+                            })
+                    )
+                    .then(
                         Commands.literal("nearby")
                             .then(effectArgument { source, effectId ->
                                 val player = source.playerOrException
@@ -118,6 +131,16 @@ object MagicRenderCommands {
             }
             .executes { context ->
                 action(context.source, StringArgumentType.getString(context, "effect"))
+            }
+    }
+
+    private fun groupArgument(action: (CommandSourceStack, String) -> Int): RequiredArgumentBuilder<CommandSourceStack, String> {
+        return Commands.argument("group", StringArgumentType.greedyString())
+            .suggests { _, builder ->
+                SharedSuggestionProvider.suggest(MagicRenderConfigManager.current.groups.bindingKeys(), builder)
+            }
+            .executes { context ->
+                action(context.source, StringArgumentType.getString(context, "group"))
             }
     }
 

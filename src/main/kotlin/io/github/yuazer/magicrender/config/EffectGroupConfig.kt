@@ -3,14 +3,23 @@ package io.github.yuazer.magicrender.config
 data class EffectGroupConfig(
     val version: Int = 1,
     val groups: Map<String, EffectGroup> = mapOf(
-        "default" to EffectGroup(description = "默认特效组", priority = 50),
-        "combat" to EffectGroup(description = "战斗技能特效", priority = 100),
-        "ambient" to EffectGroup(description = "环境氛围特效", priority = 20),
-        "debug" to EffectGroup(enabled = false, description = "调试可视化", priority = 0)
-    )
+        "default" to EffectGroup(description = "Default effect group", priority = 50),
+        "combat" to EffectGroup(description = "Combat skill effects", priority = 100),
+        "ambient" to EffectGroup(description = "Ambient effects", priority = 20),
+        "debug" to EffectGroup(enabled = false, description = "Debug visualization", priority = 0)
+    ),
+    val bindings: Map<String, List<String>> = emptyMap()
 ) {
     fun groupFor(name: String): EffectGroup {
         return groups[name] ?: groups["default"] ?: EffectGroup()
+    }
+
+    fun effectsFor(groupKey: String): List<String> {
+        return bindings[groupKey].orEmpty()
+    }
+
+    fun bindingKeys(): Set<String> {
+        return bindings.keys
     }
 
     companion object {
@@ -24,19 +33,56 @@ data class EffectGroupConfig(
             }
 
             val groups = linkedMapOf<String, EffectGroup>()
+            val bindings = linkedMapOf<String, List<String>>()
             for ((groupName, element) in groupJson.entrySet()) {
-                if (!element.isJsonObject) {
-                    result.warning("$path.groups.$groupName", "Group must be an object. Skipping.")
-                    continue
+                when {
+                    element.isJsonArray -> {
+                        bindings[groupName] = parseEffectIdArray(element.asJsonArray, "$path.groups.$groupName", result)
+                        groups.putIfAbsent(groupName, EffectGroup(description = "Effect binding group `$groupName`"))
+                    }
+                    element.isJsonObject -> {
+                        val objectJson = element.asJsonObject
+                        val effectIds = parseObjectEffectIds(objectJson, "$path.groups.$groupName", result)
+                        if (effectIds.isNotEmpty()) {
+                            bindings[groupName] = effectIds
+                        }
+                        groups[groupName] = EffectGroup.parse(objectJson, "$path.groups.$groupName", common, result)
+                    }
+                    else -> result.warning("$path.groups.$groupName", "Group must be an array of effect ids or an object. Skipping.")
                 }
-                groups[groupName] = EffectGroup.parse(element.asJsonObject, "$path.groups.$groupName", common, result)
             }
 
             if (!groups.containsKey("default")) {
-                groups["default"] = EffectGroup(description = "默认特效组", priority = 50)
+                groups["default"] = EffectGroup(description = "Default effect group", priority = 50)
             }
 
-            return EffectGroupConfig(version = version, groups = groups)
+            return EffectGroupConfig(version = version, groups = groups, bindings = bindings)
+        }
+
+        private fun parseObjectEffectIds(json: com.google.gson.JsonObject, path: String, result: ConfigLoadAccumulator): List<String> {
+            val element = json.get("effects") ?: json.get("effectIds") ?: return emptyList()
+            if (!element.isJsonArray) {
+                result.warning(path, "`effects` must be an array of effect ids. Ignoring.")
+                return emptyList()
+            }
+            return parseEffectIdArray(element.asJsonArray, path, result)
+        }
+
+        private fun parseEffectIdArray(array: com.google.gson.JsonArray, path: String, result: ConfigLoadAccumulator): List<String> {
+            return array.mapNotNull { item ->
+                val id = item.asStringOrNull()
+                when {
+                    id == null -> {
+                        result.warning(path, "Effect id must be a string. Skipping item.")
+                        null
+                    }
+                    !isValidIdentifier(id) -> {
+                        result.warning(path, "Invalid effect id `$id`. Skipping item.")
+                        null
+                    }
+                    else -> id
+                }
+            }.distinct()
         }
     }
 }
@@ -49,7 +95,7 @@ data class EffectGroup(
 ) {
     companion object {
         fun parse(json: com.google.gson.JsonObject, path: String, common: CommonConfig, result: ConfigLoadAccumulator): EffectGroup {
-            json.warnUnknownFields(setOf("enabled", "description", "priority", "limits"), path, result)
+            json.warnUnknownFields(setOf("enabled", "description", "priority", "limits", "effects", "effectIds"), path, result)
             return EffectGroup(
                 enabled = json.boolean("enabled", true),
                 description = json.string("description", ""),

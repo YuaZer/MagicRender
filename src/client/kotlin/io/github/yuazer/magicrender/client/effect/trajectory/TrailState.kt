@@ -5,7 +5,7 @@ import java.util.ArrayDeque
 
 data class TrailPoint(
     val position: Vec3,
-    val ageTicks: Int,
+    val ageTicks: Double,
     val spawnTimeNanos: Long,
     val width: Double,
     val colorArgb: Int
@@ -23,6 +23,8 @@ data class TrailEffectInstance(
     val handle: Long,
     val definition: TrailDefinition,
     val anchor: TrailAnchor,
+    var ageTicks: Int = 0,
+    val lifetimeTicks: Int = 20,
     val state: TrailState = TrailState()
 ) {
     fun isAlive(): Boolean {
@@ -40,4 +42,3 @@ data class BeamEffectInstance(
 ) {
     fun isAlive(): Boolean = ageTicks <= lifetimeTicks
 }
-

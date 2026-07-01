@@ -118,12 +118,14 @@ enum class MagicRenderPlayMode {
     TRAIL,
     MAGIC_CIRCLE,
     BEAM,
-    STREAM
+    STREAM,
+    GROUP
 }
 
 enum class MagicRenderStopMode {
     REQUEST,
     EFFECT_ID,
+    GROUP_KEY,
     ENTITY_ID,
     ALL
 }

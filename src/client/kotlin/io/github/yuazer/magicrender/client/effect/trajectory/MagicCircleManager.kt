@@ -49,11 +49,11 @@ object MagicCircleManager {
         circles.entries.removeIf { !it.value.isAlive() || TrailAnchorResolver.resolve(it.value.anchor) == null }
     }
 
-    fun prepareFrame(cameraPosition: Vec3) {
+    fun prepareFrame(context: TrajectoryRenderContext) {
         val meshes = ArrayList<MagicCircleMesh>(circles.size)
         for (circle in circles.values) {
-            val center = TrailAnchorResolver.resolve(circle.anchor) ?: continue
-            val mesh = MagicCircleMeshBuilder.build(circle, center, cameraPosition)
+            val center = TrailAnchorResolver.resolve(circle.anchor, context) ?: continue
+            val mesh = MagicCircleMeshBuilder.build(circle, center, context.cameraPosition, circle.ageTicks.toDouble() + context.tickDelta.toDouble())
             if (mesh.vertices.isNotEmpty()) meshes += mesh
         }
         lastFrameMeshes = meshes

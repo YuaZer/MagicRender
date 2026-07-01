@@ -25,6 +25,10 @@ object AdvancedEffectManager {
     var lastFrameCircles: List<MagicCircleMesh> = emptyList()
         private set
 
+    @Volatile
+    var lastFrameGlow: GlowPostDefinition? = null
+        private set
+
     fun spawn(effectId: String, source: TrailAnchor, target: TrailAnchor? = null): Long? {
         val shared = MagicRenderConfigManager.current
         val effect = shared.effects[effectId] ?: return null
@@ -84,20 +88,26 @@ object AdvancedEffectManager {
         }
     }
 
-    fun prepareFrame(cameraPosition: Vec3) {
+    fun prepareFrame(context: TrajectoryRenderContext) {
         val billboards = ArrayList<BillboardMesh>()
         val ribbons = ArrayList<RibbonMesh>()
         val circles = ArrayList<MagicCircleMesh>()
+        var glow: GlowPostDefinition? = null
         for (effect in effects.values) {
-            val source = TrailAnchorResolver.resolve(effect.source) ?: continue
-            val target = effect.target?.let(TrailAnchorResolver::resolve)
-            billboards += AdvancedMeshBuilder.buildBillboards(effect, source, target, cameraPosition)
-            ribbons += AdvancedMeshBuilder.buildRibbons(effect, source, target, cameraPosition)
-            circles += AdvancedMeshBuilder.buildCircles(effect, source, cameraPosition)
+            effect.renderAgeTicks = effect.ageTicks.toDouble() + context.tickDelta.toDouble()
+            val source = TrailAnchorResolver.resolve(effect.source, context) ?: continue
+            val target = effect.target?.let { TrailAnchorResolver.resolve(it, context) }
+            billboards += AdvancedMeshBuilder.buildBillboards(effect, source, target, context.cameraPosition)
+            ribbons += AdvancedMeshBuilder.buildRibbons(effect, source, target, context.cameraPosition)
+            circles += AdvancedMeshBuilder.buildCircles(effect, source, context.cameraPosition)
+            if (effect.definition.glow.enabled) {
+                glow = mergeGlow(glow, effect.definition.glow)
+            }
         }
         lastFrameBillboards = billboards
         lastFrameRibbons = ribbons
         lastFrameCircles = circles
+        lastFrameGlow = glow
     }
 
     fun clear() {
@@ -105,6 +115,20 @@ object AdvancedEffectManager {
         lastFrameBillboards = emptyList()
         lastFrameRibbons = emptyList()
         lastFrameCircles = emptyList()
+        lastFrameGlow = null
+        GlowPostProcessor.close()
+    }
+
+    private fun mergeGlow(current: GlowPostDefinition?, next: GlowPostDefinition): GlowPostDefinition {
+        if (current == null) return next
+        return GlowPostDefinition(
+            enabled = true,
+            intensity = maxOf(current.intensity, next.intensity),
+            radius = maxOf(current.radius, next.radius),
+            iterations = maxOf(current.iterations, next.iterations),
+            downsample = minOf(current.downsample, next.downsample),
+            threshold = minOf(current.threshold, next.threshold)
+        )
     }
 
     private fun seed(value: Double): Double {

@@ -14,6 +14,14 @@ object RibbonRenderBackend {
     private val fallbackTexture = ResourceLocation.withDefaultNamespace("textures/misc/white.png")
 
     fun render(meshes: List<RibbonMesh>, cameraPosition: Vec3) {
+        render(meshes, cameraPosition, glowOnly = false)
+    }
+
+    fun renderGlow(meshes: List<RibbonMesh>, cameraPosition: Vec3, intensity: Double) {
+        render(meshes.map { it.glow(intensity) }, cameraPosition, glowOnly = true)
+    }
+
+    private fun render(meshes: List<RibbonMesh>, cameraPosition: Vec3, glowOnly: Boolean) {
         if (meshes.isEmpty()) return
 
         RenderSystem.enableBlend()
@@ -25,7 +33,11 @@ object RibbonRenderBackend {
         try {
             RenderSystem.setShader { GameRenderer.getPositionTexColorShader() }
             for ((key, meshGroup) in meshes.groupBy { MeshRenderKey(it.texture, it.blendMode) }) {
-                applyBlendMode(key.blendMode)
+                if (glowOnly) {
+                    RenderSystem.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE)
+                } else {
+                    applyBlendMode(key.blendMode)
+                }
                 renderGroup(key.texture, meshGroup, cameraPosition)
             }
         } finally {
@@ -75,4 +87,19 @@ object RibbonRenderBackend {
         val texture: String,
         val blendMode: EffectBlendMode
     )
+
+    private fun RibbonMesh.glow(intensity: Double): RibbonMesh {
+        return copy(vertices = vertices.map { vertex ->
+            vertex.copy(colorArgb = scaleForGlow(vertex.colorArgb, intensity))
+        })
+    }
+
+    private fun scaleForGlow(color: Int, intensity: Double): Int {
+        val scale = intensity.coerceAtLeast(0.0)
+        val alpha = ((color ushr 24 and 0xFF) * scale).toInt().coerceIn(0, 255)
+        val red = ((color ushr 16 and 0xFF) * scale).toInt().coerceIn(0, 255)
+        val green = ((color ushr 8 and 0xFF) * scale).toInt().coerceIn(0, 255)
+        val blue = ((color and 0xFF) * scale).toInt().coerceIn(0, 255)
+        return alpha shl 24 or (red shl 16) or (green shl 8) or blue
+    }
 }

@@ -13,14 +13,14 @@ object AdvancedMeshBuilder {
         val ageT = normalizedAge(instance)
 
         if (instance.definition.core.enabled) {
-            meshes += coreMeshes(instance.definition.core, instance.definition.bloom, source, basis, instance.ageTicks, ageT)
+            meshes += coreMeshes(instance.definition.core, instance.definition.bloom, source, basis, instance.renderAgeTicks, ageT)
         }
 
         for ((emitterIndex, emitter) in instance.definition.particleEmitters.withIndex()) {
             val vertices = ArrayList<BillboardVertex>(emitter.count * 6)
             for (index in 0 until emitter.count) {
                 val seedValue = seed(instance, emitterIndex * 4099 + index)
-                val position = particlePosition(emitter, source, seedValue, index, instance.ageTicks)
+                val position = particlePosition(emitter, source, seedValue, index, instance.renderAgeTicks)
                 val pointT = ((index.toDouble() / emitter.count.coerceAtLeast(1)) + ageT).mod1()
                 val size = lerp(emitter.sizeStart, emitter.sizeEnd, pointT)
                 val color = lerpColor(emitter.colorStart, emitter.colorEnd, pointT)
@@ -38,7 +38,7 @@ object AdvancedMeshBuilder {
         val destination = target ?: source.add(Vec3(6.0, 0.0, 0.0))
         for (bundle in instance.definition.ribbonBundles) {
             for (line in 0 until bundle.count) {
-                val points = ribbonPoints(bundle, source, destination, line, instance.ageTicks)
+                val points = ribbonPoints(bundle, source, destination, line, instance.renderAgeTicks)
                 val mesh = RibbonMeshBuilder.buildCustom(
                     points = points,
                     texture = bundle.texture,
@@ -50,17 +50,17 @@ object AdvancedMeshBuilder {
                         lerp(bundle.widthStart, bundle.widthEnd, t)
                     },
                     colorAt = { index ->
-                        val t = (normalizedIndex(index, points.size) + instance.ageTicks * bundle.flowSpeed * 0.02).mod1()
+                        val t = (normalizedIndex(index, points.size) + instance.renderAgeTicks * bundle.flowSpeed * 0.02).mod1()
                         lerpColor(bundle.colorStart, bundle.colorEnd, t)
                     },
-                    vOffset = (instance.ageTicks * bundle.flowSpeed).toFloat()
+                    vOffset = (instance.renderAgeTicks * bundle.flowSpeed).toFloat()
                 )
                 if (mesh.vertices.isNotEmpty()) meshes += mesh
             }
         }
 
         for (burst in instance.definition.radialBursts) {
-            val rotation = Math.toRadians(instance.ageTicks * burst.rotationSpeed)
+            val rotation = Math.toRadians(instance.renderAgeTicks * burst.rotationSpeed)
             for (ray in 0 until burst.rays) {
                 val seed = seed(instance, 9000 + ray)
                 val jitter = (seed - 0.5) * burst.randomJitter
@@ -89,7 +89,7 @@ object AdvancedMeshBuilder {
                 effectId = instance.definition.effectId,
                 style = layer.glyphMode,
                 radius = layer.radius,
-                colorArgb = fadeColor(layer.colorArgb, instance.ageTicks, instance.lifetimeTicks),
+                colorArgb = fadeColor(layer.colorArgb, instance.renderAgeTicks, instance.lifetimeTicks),
                 thickness = layer.thickness,
                 segments = layer.segments,
                 facing = layer.facing,
@@ -99,13 +99,13 @@ object AdvancedMeshBuilder {
                 blendMode = layer.blendMode
             )
             val circle = MagicCircleInstance(instance.handle, definition, instance.source, instance.lifetimeTicks, instance.ageTicks)
-            val mesh = MagicCircleMeshBuilder.build(circle, source, cameraPosition)
+            val mesh = MagicCircleMeshBuilder.build(circle, source, cameraPosition, instance.renderAgeTicks)
             if (mesh.vertices.isNotEmpty()) meshes += mesh
         }
         return meshes
     }
 
-    private fun coreMeshes(core: CoreGlowDefinition, bloom: BloomApproximationDefinition, source: Vec3, basis: BillboardBasis, ageTicks: Int, ageT: Double): List<BillboardMesh> {
+    private fun coreMeshes(core: CoreGlowDefinition, bloom: BloomApproximationDefinition, source: Vec3, basis: BillboardBasis, ageTicks: Double, ageT: Double): List<BillboardMesh> {
         val vertices = ArrayList<BillboardVertex>()
         val pulse = 1.0 + sin(ageTicks * core.pulseSpeed) * core.pulseAmplitude
         val size = core.radius * pulse
@@ -115,7 +115,7 @@ object AdvancedMeshBuilder {
         return listOf(BillboardMesh(core.texture, core.blendMode, vertices))
     }
 
-    private fun particlePosition(emitter: ParticleEmitterDefinition, source: Vec3, seedValue: Double, index: Int, ageTicks: Int): Vec3 {
+    private fun particlePosition(emitter: ParticleEmitterDefinition, source: Vec3, seedValue: Double, index: Int, ageTicks: Double): Vec3 {
         val a = seedValue * PI * 2.0 + ageTicks * emitter.swirlSpeed * 0.02
         val b = seed(index * 17.0 + seedValue * 31.0) * PI * 2.0
         val drift = ageTicks * emitter.speed
@@ -134,7 +134,7 @@ object AdvancedMeshBuilder {
         }
     }
 
-    private fun ribbonPoints(bundle: RibbonBundleDefinition, source: Vec3, target: Vec3, line: Int, ageTicks: Int): List<Vec3> {
+    private fun ribbonPoints(bundle: RibbonBundleDefinition, source: Vec3, target: Vec3, line: Int, ageTicks: Double): List<Vec3> {
         val direction = safeNormalize(target.subtract(source), Vec3(1.0, 0.0, 0.0))
         val side = safeNormalize(direction.cross(Vec3(0.0, 1.0, 0.0)), Vec3(0.0, 0.0, 1.0))
         val up = safeNormalize(side.cross(direction), Vec3(0.0, 1.0, 0.0))
@@ -184,7 +184,7 @@ object AdvancedMeshBuilder {
     }
 
     private fun normalizedAge(instance: AdvancedEffectInstance): Double {
-        return if (instance.lifetimeTicks <= 0) 1.0 else (instance.ageTicks.toDouble() / instance.lifetimeTicks).coerceIn(0.0, 1.0)
+        return if (instance.lifetimeTicks <= 0) 1.0 else (instance.renderAgeTicks / instance.lifetimeTicks).coerceIn(0.0, 1.0)
     }
 
     private fun normalizedIndex(index: Int, size: Int): Double {
@@ -221,8 +221,8 @@ object AdvancedMeshBuilder {
         return scaleAlpha(argb, fade)
     }
 
-    private fun fadeColor(argb: Int, ageTicks: Int, lifetimeTicks: Int): Int {
-        val t = if (lifetimeTicks <= 0) 1.0 else ageTicks.toDouble() / lifetimeTicks
+    private fun fadeColor(argb: Int, ageTicks: Double, lifetimeTicks: Int): Int {
+        val t = if (lifetimeTicks <= 0) 1.0 else ageTicks / lifetimeTicks
         return fadeColor(argb, t)
     }
 

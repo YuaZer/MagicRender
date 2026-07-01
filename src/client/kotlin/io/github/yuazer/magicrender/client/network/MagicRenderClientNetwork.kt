@@ -13,7 +13,7 @@ import net.minecraft.client.Minecraft
 import net.minecraft.world.phys.Vec3
 
 object MagicRenderClientNetwork {
-    private val requestHandles = linkedMapOf<Long, Long>()
+    private val requestHandles = linkedMapOf<Long, MutableList<Long>>()
 
     fun register() {
         ClientPlayNetworking.registerGlobalReceiver(PlayEffectPayload.TYPE) { payload, context ->
@@ -41,30 +41,46 @@ object MagicRenderClientNetwork {
             MagicRenderPlayMode.MAGIC_CIRCLE -> MagicRenderClientApi.playMagicCircle(payload.effectId, source)
             MagicRenderPlayMode.BEAM -> if (target != null) MagicRenderClientApi.playBeam(payload.effectId, source, target) else MagicRenderClientApi.NO_HANDLE
             MagicRenderPlayMode.STREAM -> MagicRenderClientApi.playEffect(payload.effectId, source)
+            MagicRenderPlayMode.GROUP -> if (target != null) {
+                MagicRenderClientApi.playGroup(payload.effectId, source, target)
+            } else {
+                MagicRenderClientApi.playGroup(payload.effectId, source)
+            }
         }
         if (handle != MagicRenderClientApi.NO_HANDLE) {
-            requestHandles[payload.requestId] = handle
+            requestHandles.getOrPut(payload.requestId) { mutableListOf() } += handle
         }
     }
 
     private fun handleStop(payload: StopEffectPayload) {
         when (payload.stopMode) {
             MagicRenderStopMode.REQUEST -> {
-                val handle = requestHandles.remove(payload.requestId) ?: return
-                MagicRenderClientApi.stop(handle)
+                val handles = requestHandles.remove(payload.requestId) ?: return
+                handles.forEach(MagicRenderClientApi::stop)
             }
             MagicRenderStopMode.EFFECT_ID -> {
                 MagicRenderClientApi.stopEffect(payload.effectId)
-                requestHandles.entries.removeIf { (_, handle) -> !MagicRenderClientApi.isPlaying(handle) }
+                pruneRequestHandles()
+            }
+            MagicRenderStopMode.GROUP_KEY -> {
+                MagicRenderClientApi.stopGroup(payload.effectId)
+                pruneRequestHandles()
             }
             MagicRenderStopMode.ENTITY_ID -> {
                 MagicRenderClientApi.stopBoundToEntity(payload.entityId)
-                requestHandles.entries.removeIf { (_, handle) -> !MagicRenderClientApi.isPlaying(handle) }
+                pruneRequestHandles()
             }
             MagicRenderStopMode.ALL -> {
                 MagicRenderClientApi.stopAllApiEffects()
                 requestHandles.clear()
             }
+        }
+    }
+
+    private fun pruneRequestHandles() {
+        requestHandles.entries.removeIf { (_, handles) ->
+            handles.removeIf { handle -> !MagicRenderClientApi.isPlaying(handle) }
+            handles.isEmpty()
         }
     }
 

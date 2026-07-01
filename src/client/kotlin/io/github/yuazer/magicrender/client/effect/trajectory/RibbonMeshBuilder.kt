@@ -136,8 +136,8 @@ object RibbonMeshBuilder {
         return if (vector.length() < 1.0E-5) fallback else vector.normalize()
     }
 
-    private fun ageT(ageTicks: Int, lifetimeTicks: Int): Double {
-        return if (lifetimeTicks <= 0) 1.0 else ageTicks.toDouble() / lifetimeTicks.toDouble()
+    private fun ageT(ageTicks: Double, lifetimeTicks: Int): Double {
+        return if (lifetimeTicks <= 0) 1.0 else ageTicks / lifetimeTicks.toDouble()
     }
 
     private fun normalizedIndex(index: Int, size: Int): Double {

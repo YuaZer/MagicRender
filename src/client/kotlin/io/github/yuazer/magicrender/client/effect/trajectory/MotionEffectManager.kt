@@ -34,7 +34,8 @@ object MotionEffectManager {
         trails[handle] = TrailEffectInstance(
             handle = handle,
             definition = definition,
-            anchor = applyMotion(anchor, definition.motion)
+            anchor = applyMotion(anchor, definition.motion),
+            lifetimeTicks = effect.durationTicks
         )
         return handle
     }
@@ -77,7 +78,12 @@ object MotionEffectManager {
     }
 
     fun tick() {
-        trails.values.forEach(TrailSampler::tick)
+        trails.values.forEach { trail ->
+            trail.ageTicks += 1
+            if (trail.ageTicks > trail.lifetimeTicks) {
+                trail.state.enabled = false
+            }
+        }
         trails.entries.removeIf { !it.value.isAlive() }
 
         beams.values.forEach { it.ageTicks += 1 }
@@ -85,21 +91,27 @@ object MotionEffectManager {
     }
 
     fun buildMeshes(cameraPosition: Vec3 = Minecraft.getInstance().gameRenderer.mainCamera.position): List<RibbonMesh> {
+        val context = TrajectoryRenderContext(cameraPosition, 1.0f, (Minecraft.getInstance().level?.gameTime ?: 0L).toDouble(), System.nanoTime())
+        return buildMeshes(context)
+    }
+
+    fun buildMeshes(context: TrajectoryRenderContext): List<RibbonMesh> {
         val meshes = ArrayList<RibbonMesh>(trails.size + beams.size)
         for (trail in trails.values) {
-            val mesh = RibbonMeshBuilder.buildTrail(trail, cameraPosition)
+            TrailSampler.sampleFrame(trail, context)
+            val mesh = RibbonMeshBuilder.buildTrail(trail, context.cameraPosition)
             if (mesh.vertices.isNotEmpty()) meshes += mesh
         }
         for (beam in beams.values) {
-            val points = BeamPointGenerator.generate(beam)
-            val mesh = RibbonMeshBuilder.buildBeam(beam, points, cameraPosition)
+            val points = BeamPointGenerator.generate(beam, context)
+            val mesh = RibbonMeshBuilder.buildBeam(beam, points, context.cameraPosition)
             if (mesh.vertices.isNotEmpty()) meshes += mesh
         }
         return meshes
     }
 
-    fun prepareFrame(cameraPosition: Vec3) {
-        lastFrameMeshes = buildMeshes(cameraPosition)
+    fun prepareFrame(context: TrajectoryRenderContext) {
+        lastFrameMeshes = buildMeshes(context)
     }
 
     fun clear() {

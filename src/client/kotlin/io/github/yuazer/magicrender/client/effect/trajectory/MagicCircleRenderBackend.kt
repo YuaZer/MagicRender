@@ -11,6 +11,14 @@ import net.minecraft.world.phys.Vec3
 
 object MagicCircleRenderBackend {
     fun render(meshes: List<MagicCircleMesh>, cameraPosition: Vec3) {
+        render(meshes, cameraPosition, glowOnly = false)
+    }
+
+    fun renderGlow(meshes: List<MagicCircleMesh>, cameraPosition: Vec3, intensity: Double) {
+        render(meshes.map { it.glow(intensity) }, cameraPosition, glowOnly = true)
+    }
+
+    private fun render(meshes: List<MagicCircleMesh>, cameraPosition: Vec3, glowOnly: Boolean) {
         if (meshes.isEmpty()) return
 
         RenderSystem.enableBlend()
@@ -21,7 +29,11 @@ object MagicCircleRenderBackend {
         try {
             RenderSystem.setShader { GameRenderer.getPositionColorShader() }
             for ((blendMode, meshGroup) in meshes.groupBy { it.blendMode }) {
-                applyBlendMode(blendMode)
+                if (glowOnly) {
+                    RenderSystem.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE)
+                } else {
+                    applyBlendMode(blendMode)
+                }
                 renderGroup(meshGroup, cameraPosition)
             }
         } finally {
@@ -55,5 +67,20 @@ object MagicCircleRenderBackend {
                 GlStateManager.DestFactor.ONE
             )
         }
+    }
+
+    private fun MagicCircleMesh.glow(intensity: Double): MagicCircleMesh {
+        return copy(vertices = vertices.map { vertex ->
+            vertex.copy(colorArgb = scaleForGlow(vertex.colorArgb, intensity))
+        })
+    }
+
+    private fun scaleForGlow(color: Int, intensity: Double): Int {
+        val scale = intensity.coerceAtLeast(0.0)
+        val alpha = ((color ushr 24 and 0xFF) * scale).toInt().coerceIn(0, 255)
+        val red = ((color ushr 16 and 0xFF) * scale).toInt().coerceIn(0, 255)
+        val green = ((color ushr 8 and 0xFF) * scale).toInt().coerceIn(0, 255)
+        val blue = ((color and 0xFF) * scale).toInt().coerceIn(0, 255)
+        return alpha shl 24 or (red shl 16) or (green shl 8) or blue
     }
 }

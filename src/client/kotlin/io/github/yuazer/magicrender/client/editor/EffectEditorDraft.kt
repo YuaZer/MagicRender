@@ -9,6 +9,7 @@ import io.github.yuazer.magicrender.config.CoreGlowComponent
 import io.github.yuazer.magicrender.config.EffectComponents
 import io.github.yuazer.magicrender.config.EffectDefinition
 import io.github.yuazer.magicrender.config.EffectVisibility
+import io.github.yuazer.magicrender.config.GlowPostComponent
 import io.github.yuazer.magicrender.config.MagicCircleComponent
 import io.github.yuazer.magicrender.config.ParticleEmitterComponent
 import io.github.yuazer.magicrender.config.RadialBurstComponent
@@ -273,6 +274,7 @@ data class MagicCircleDraft(
 data class AdvancedDraft(
     var enabled: Boolean = false,
     var bloom: BloomApproximationDraft = BloomApproximationDraft(),
+    var glow: GlowPostDraft = GlowPostDraft(),
     var core: CoreGlowDraft = CoreGlowDraft(),
     var particleEmitters: MutableList<ParticleEmitterDraft> = mutableListOf(),
     var ribbonBundles: MutableList<RibbonBundleDraft> = mutableListOf(),
@@ -283,6 +285,7 @@ data class AdvancedDraft(
         return AdvancedVisualComponent(
             enabled = enabled,
             bloom = bloom.toComponent(),
+            glow = glow.toComponent(),
             core = core.toComponent(),
             particleEmitters = particleEmitters.map { it.toComponent() },
             ribbonBundles = ribbonBundles.map { it.toComponent() },
@@ -299,6 +302,17 @@ data class BloomApproximationDraft(
     var alphaFalloff: Double = 0.45
 ) {
     fun toComponent(): BloomApproximationComponent = BloomApproximationComponent(enabled, layers, scaleStep, alphaFalloff)
+}
+
+data class GlowPostDraft(
+    var enabled: Boolean = true,
+    var intensity: Double = 1.35,
+    var radius: Double = 1.0,
+    var iterations: Int = 4,
+    var downsample: Int = 2,
+    var threshold: Double = 0.0
+) {
+    fun toComponent(): GlowPostComponent = GlowPostComponent(enabled, intensity, radius, iterations, downsample, threshold)
 }
 
 data class CoreGlowDraft(

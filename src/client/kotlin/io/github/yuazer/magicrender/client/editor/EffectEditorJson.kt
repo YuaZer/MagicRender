@@ -111,6 +111,15 @@ object EffectEditorJson {
         bloom.addProperty("alphaFalloff", advanced.bloom.alphaFalloff)
         json.add("bloom", bloom)
 
+        val glow = JsonObject()
+        glow.addProperty("enabled", advanced.glow.enabled)
+        glow.addProperty("intensity", advanced.glow.intensity)
+        glow.addProperty("radius", advanced.glow.radius)
+        glow.addProperty("iterations", advanced.glow.iterations)
+        glow.addProperty("downsample", advanced.glow.downsample)
+        glow.addProperty("threshold", advanced.glow.threshold)
+        json.add("glow", glow)
+
         val core = JsonObject()
         core.addProperty("enabled", advanced.core.enabled)
         core.addProperty("color", advanced.core.color)

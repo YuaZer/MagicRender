@@ -8,6 +8,7 @@ import io.github.yuazer.magicrender.client.editor.CircleLayerDraft
 import io.github.yuazer.magicrender.client.editor.ComponentDrafts
 import io.github.yuazer.magicrender.client.editor.CoreGlowDraft
 import io.github.yuazer.magicrender.client.editor.EffectEditorDraft
+import io.github.yuazer.magicrender.client.editor.GlowPostDraft
 import io.github.yuazer.magicrender.client.editor.MagicCircleDraft
 import io.github.yuazer.magicrender.client.editor.ParticleEmitterDraft
 import io.github.yuazer.magicrender.client.editor.PreviewDraft
@@ -155,11 +156,24 @@ object EffectEditorDraftCodec {
         return AdvancedDraft(
             enabled = json.boolean("enabled", default.enabled),
             bloom = bloom(json.obj("bloom"), default.bloom),
+            glow = glow(json.obj("glow"), default.glow),
             core = core(json.obj("core"), default.core),
             particleEmitters = json.objectList("particleEmitters").map { particleEmitter(it, ParticleEmitterDraft()) }.toMutableList(),
             ribbonBundles = json.objectList("ribbonBundles").map { ribbonBundle(it, RibbonBundleDraft()) }.toMutableList(),
             circleLayers = json.objectList("circleLayers").map { circleLayer(it, CircleLayerDraft()) }.toMutableList(),
             radialBursts = json.objectList("radialBursts").map { radialBurst(it, RadialBurstDraft()) }.toMutableList()
+        )
+    }
+
+    private fun glow(json: JsonObject?, default: GlowPostDraft): GlowPostDraft {
+        if (json == null) return default
+        return GlowPostDraft(
+            enabled = json.boolean("enabled", default.enabled),
+            intensity = json.doubleLoose("intensity", default.intensity),
+            radius = json.doubleLoose("radius", default.radius),
+            iterations = json.intLoose("iterations", default.iterations),
+            downsample = json.intLoose("downsample", default.downsample),
+            threshold = json.doubleLoose("threshold", default.threshold)
         )
     }
 

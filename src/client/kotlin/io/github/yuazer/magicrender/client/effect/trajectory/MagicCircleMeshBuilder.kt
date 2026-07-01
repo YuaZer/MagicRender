@@ -7,11 +7,15 @@ import kotlin.math.sin
 
 object MagicCircleMeshBuilder {
     fun build(instance: MagicCircleInstance, center: Vec3, cameraPosition: Vec3): MagicCircleMesh {
+        return build(instance, center, cameraPosition, instance.ageTicks.toDouble())
+    }
+
+    fun build(instance: MagicCircleInstance, center: Vec3, cameraPosition: Vec3, ageTicks: Double): MagicCircleMesh {
         val definition = instance.definition
         val basis = computeBasis(definition.facing, center, cameraPosition)
-        val rotation = Math.toRadians(instance.ageTicks * definition.rotationSpeedDegreesPerTick)
+        val rotation = Math.toRadians(ageTicks * definition.rotationSpeedDegreesPerTick)
         val vertices = ArrayList<MagicCircleVertex>(definition.segments * 18)
-        val color = fadeColor(definition.colorArgb, instance.ageTicks, instance.lifetimeTicks)
+        val color = fadeColor(definition.colorArgb, ageTicks, instance.lifetimeTicks)
 
         addRing(
             vertices = vertices,
@@ -137,9 +141,9 @@ object MagicCircleMeshBuilder {
         return if (vector.length() < 1.0E-5) fallback else vector.normalize()
     }
 
-    private fun fadeColor(argb: Int, ageTicks: Int, lifetimeTicks: Int): Int {
+    private fun fadeColor(argb: Int, ageTicks: Double, lifetimeTicks: Int): Int {
         if (lifetimeTicks <= 0) return argb
-        val age = ageTicks.toDouble() / lifetimeTicks.toDouble()
+        val age = ageTicks / lifetimeTicks.toDouble()
         val fade = when {
             age < 0.12 -> age / 0.12
             age > 0.82 -> (1.0 - age) / 0.18

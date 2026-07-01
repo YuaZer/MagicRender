@@ -53,7 +53,9 @@ object MagicRenderClientCommands {
                     .then(bindType("circle"))
                     .then(bindType("trail"))
                     .then(bindType("stream"))
+                    .then(bindGroup())
             )
+            .then(bindGroupAlias())
             .then(
                 ClientCommandManager.literal("config")
                     .then(
@@ -84,6 +86,34 @@ object MagicRenderClientCommands {
                     .executes { context ->
                         val effectId = StringArgumentType.getString(context, "effect")
                         bindToCrosshairEntity(context.source, type, effectId)
+                    }
+            )
+    }
+
+    private fun bindGroup(): LiteralArgumentBuilder<FabricClientCommandSource> {
+        return ClientCommandManager.literal("group")
+            .then(
+                ClientCommandManager.argument("group", StringArgumentType.greedyString())
+                    .suggests { _, builder ->
+                        SharedSuggestionProvider.suggest(MagicRenderClientApi.loadedGroupKeys(), builder)
+                    }
+                    .executes { context ->
+                        val groupKey = StringArgumentType.getString(context, "group")
+                        bindGroupToCrosshairEntity(context.source, groupKey)
+                    }
+            )
+    }
+
+    private fun bindGroupAlias(): LiteralArgumentBuilder<FabricClientCommandSource> {
+        return ClientCommandManager.literal("bindGroup")
+            .then(
+                ClientCommandManager.argument("group", StringArgumentType.greedyString())
+                    .suggests { _, builder ->
+                        SharedSuggestionProvider.suggest(MagicRenderClientApi.loadedGroupKeys(), builder)
+                    }
+                    .executes { context ->
+                        val groupKey = StringArgumentType.getString(context, "group")
+                        bindGroupToCrosshairEntity(context.source, groupKey)
                     }
             )
     }
@@ -120,6 +150,30 @@ object MagicRenderClientCommands {
 
         source.sendFeedback(
             tr("magicrender.command.bind.success", type, effectId, target.name.string, target.id, handles.joinToString(","))
+        )
+        return Command.SINGLE_SUCCESS
+    }
+
+    private fun bindGroupToCrosshairEntity(source: FabricClientCommandSource, groupKey: String): Int {
+        if (MagicRenderClientApi.loadedGroupEffectIds(groupKey).isEmpty()) {
+            source.sendError(tr("magicrender.command.bind.group_not_loaded", groupKey))
+            return 0
+        }
+
+        val target = crosshairEntity()
+        if (target == null) {
+            source.sendError(tr("magicrender.command.bind.no_entity"))
+            return 0
+        }
+
+        val handle = MagicRenderClientApi.bindGroup(groupKey, target)
+        if (handle == MagicRenderClientApi.NO_HANDLE) {
+            source.sendError(tr("magicrender.command.bind.spawn_failed", groupKey, "group"))
+            return 0
+        }
+
+        source.sendFeedback(
+            tr("magicrender.command.bind_group.success", groupKey, target.name.string, target.id, handle)
         )
         return Command.SINGLE_SUCCESS
     }

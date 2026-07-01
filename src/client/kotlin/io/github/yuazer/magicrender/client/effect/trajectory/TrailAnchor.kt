@@ -17,21 +17,39 @@ sealed interface TrailAnchor {
 
 object TrailAnchorResolver {
     fun resolve(anchor: TrailAnchor): Vec3? {
+        val world = Minecraft.getInstance().level
+        val timeTicks = world?.gameTime?.toDouble() ?: 0.0
+        return resolve(anchor, tickDelta = 1.0f, timeTicks = timeTicks)
+    }
+
+    fun resolve(anchor: TrailAnchor, context: TrajectoryRenderContext): Vec3? {
+        return resolve(anchor, context.tickDelta, context.renderTimeTicks)
+    }
+
+    fun resolve(anchor: TrailAnchor, tickDelta: Float, timeTicks: Double): Vec3? {
         return when (anchor) {
             is TrailAnchor.Entity -> {
                 val world = Minecraft.getInstance().level ?: return null
                 val entity = world.getEntity(anchor.entityId) ?: return null
-                entity.position().add(anchor.offset)
+                interpolatedPosition(entity, tickDelta).add(anchor.offset)
             }
             is TrailAnchor.EntityMotion -> {
                 val world = Minecraft.getInstance().level ?: return null
                 val entity = world.getEntity(anchor.entityId) ?: return null
-                val base = entity.position().add(anchor.offset)
-                val tick = world.gameTime.toDouble()
-                base.add(computeMotionOffset(anchor.motion, tick))
+                val base = interpolatedPosition(entity, tickDelta).add(anchor.offset)
+                base.add(computeMotionOffset(anchor.motion, timeTicks))
             }
             is TrailAnchor.WorldPoint -> anchor.position
         }
+    }
+
+    private fun interpolatedPosition(entity: net.minecraft.world.entity.Entity, tickDelta: Float): Vec3 {
+        val t = tickDelta.toDouble().coerceIn(0.0, 1.0)
+        return Vec3(
+            entity.xOld + (entity.x - entity.xOld) * t,
+            entity.yOld + (entity.y - entity.yOld) * t,
+            entity.zOld + (entity.z - entity.zOld) * t
+        )
     }
 
     private fun computeMotionOffset(motion: TrailMotionDefinition, tick: Double): Vec3 {

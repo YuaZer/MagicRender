@@ -5,12 +5,23 @@ import kotlin.math.sin
 
 object BeamPointGenerator {
     fun generate(instance: BeamEffectInstance): List<Vec3> {
-        val from = TrailAnchorResolver.resolve(instance.from) ?: return emptyList()
-        val to = TrailAnchorResolver.resolve(instance.to) ?: return emptyList()
+        val context = TrajectoryRenderContext(
+            cameraPosition = Vec3.ZERO,
+            tickDelta = 1.0f,
+            renderTimeTicks = instance.ageTicks.toDouble(),
+            nowNanos = System.nanoTime()
+        )
+        return generate(instance, context)
+    }
+
+    fun generate(instance: BeamEffectInstance, context: TrajectoryRenderContext): List<Vec3> {
+        val from = TrailAnchorResolver.resolve(instance.from, context) ?: return emptyList()
+        val to = TrailAnchorResolver.resolve(instance.to, context) ?: return emptyList()
         val segments = instance.definition.segments.coerceAtLeast(1)
         val points = ArrayList<Vec3>(segments + 1)
         val direction = to.subtract(from)
         val side = perpendicular(direction)
+        val age = instance.ageTicks.toDouble() + context.tickDelta.toDouble()
 
         for (index in 0..segments) {
             val t = index.toDouble() / segments.toDouble()
@@ -18,7 +29,7 @@ object BeamPointGenerator {
             val offset = if (index == 0 || index == segments || instance.definition.noise <= 0.0) {
                 Vec3(0.0, 0.0, 0.0)
             } else {
-                val wave = sin((instance.ageTicks + index * 13).toDouble() * 0.55)
+                val wave = sin((age + index * 13).toDouble() * 0.55)
                 side.scale(wave * instance.definition.noise)
             }
             points += base.add(offset)

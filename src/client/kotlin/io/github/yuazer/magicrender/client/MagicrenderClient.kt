@@ -3,6 +3,7 @@ package io.github.yuazer.magicrender.client
 import io.github.yuazer.magicrender.client.command.MagicRenderClientCommands
 import io.github.yuazer.magicrender.client.config.ClientConfigReloader
 import io.github.yuazer.magicrender.client.editor.web.EffectEditorWebServerManager
+import io.github.yuazer.magicrender.client.effect.trajectory.GlowPostProcessor
 import io.github.yuazer.magicrender.client.effect.trajectory.MotionTrajectoryLayer
 import io.github.yuazer.magicrender.client.network.MagicRenderClientNetwork
 import io.github.yuazer.magicrender.config.MagicRenderConfigManager
@@ -22,6 +23,7 @@ class MagicrenderClient : ClientModInitializer {
         MotionTrajectoryLayer.register()
         EffectEditorWebServerManager.startFromConfig()
         ClientLifecycleEvents.CLIENT_STOPPING.register {
+            GlowPostProcessor.close()
             EffectEditorWebServerManager.stop()
         }
     }

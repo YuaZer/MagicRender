@@ -5,6 +5,7 @@ import io.github.yuazer.magicrender.network.MagicRenderPlayMode
 import io.github.yuazer.magicrender.network.MagicRenderStopMode
 import io.github.yuazer.magicrender.network.PlayEffectPayload
 import io.github.yuazer.magicrender.network.StopEffectPayload
+import io.github.yuazer.magicrender.config.MagicRenderConfigManager
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
@@ -42,6 +43,31 @@ object MagicRenderServerApi {
     }
 
     @JvmStatic
+    fun playGroup(player: ServerPlayer, groupKey: String, source: Entity): Long {
+        return sendGroupPlay(player, groupKey, MagicRenderAnchorPayload.entity(source.id, defaultOffset(source)), null)
+    }
+
+    @JvmStatic
+    fun playGroup(player: ServerPlayer, groupKey: String, source: Vec3): Long {
+        return sendGroupPlay(player, groupKey, MagicRenderAnchorPayload.world(source), null)
+    }
+
+    @JvmStatic
+    fun playGroup(player: ServerPlayer, groupKey: String, source: Entity, target: Entity): Long {
+        return sendGroupPlay(
+            player,
+            groupKey,
+            MagicRenderAnchorPayload.entity(source.id, defaultOffset(source)),
+            MagicRenderAnchorPayload.entity(target.id, defaultOffset(target))
+        )
+    }
+
+    @JvmStatic
+    fun playGroup(player: ServerPlayer, groupKey: String, source: Vec3, target: Vec3): Long {
+        return sendGroupPlay(player, groupKey, MagicRenderAnchorPayload.world(source), MagicRenderAnchorPayload.world(target))
+    }
+
+    @JvmStatic
     fun playForTracking(entity: Entity, effectId: String, mode: MagicRenderPlayMode = MagicRenderPlayMode.EFFECT): Long {
         val requestId = nextRequestId.getAndIncrement()
         val payload = PlayEffectPayload(
@@ -56,10 +82,38 @@ object MagicRenderServerApi {
     }
 
     @JvmStatic
+    fun playGroupForTracking(entity: Entity, groupKey: String): Long {
+        if (!hasGroupBinding(groupKey)) return 0L
+        val requestId = nextRequestId.getAndIncrement()
+        val payload = groupPayload(
+            requestId,
+            groupKey,
+            groupMode(),
+            MagicRenderAnchorPayload.entity(entity.id, defaultOffset(entity)),
+            null
+        )
+        trackingPlayers(entity).forEach { player ->
+            sendIfPossible(player, payload)
+        }
+        return requestId
+    }
+
+    @JvmStatic
     fun broadcast(server: MinecraftServer, effectId: String, source: Vec3, mode: MagicRenderPlayMode = MagicRenderPlayMode.EFFECT): Long {
         val requestId = nextRequestId.getAndIncrement()
         val payload = PlayEffectPayload(requestId, effectId, mode, MagicRenderAnchorPayload.world(source), null)
         server.playerList.players.forEach { sendIfPossible(it, payload) }
+        return requestId
+    }
+
+    @JvmStatic
+    fun broadcastGroup(server: MinecraftServer, groupKey: String, source: Vec3): Long {
+        if (!hasGroupBinding(groupKey)) return 0L
+        val requestId = nextRequestId.getAndIncrement()
+        val payload = groupPayload(requestId, groupKey, groupMode(), MagicRenderAnchorPayload.world(source), null)
+        server.playerList.players.forEach { player ->
+            sendIfPossible(player, payload)
+        }
         return requestId
     }
 
@@ -71,6 +125,11 @@ object MagicRenderServerApi {
     @JvmStatic
     fun stopEffect(player: ServerPlayer, effectId: String) {
         sendStop(player, StopEffectPayload(0L, MagicRenderStopMode.EFFECT_ID, effectId, 0))
+    }
+
+    @JvmStatic
+    fun stopGroup(player: ServerPlayer, groupKey: String) {
+        sendStop(player, StopEffectPayload(0L, MagicRenderStopMode.GROUP_KEY, groupKey, 0))
     }
 
     @JvmStatic
@@ -93,6 +152,36 @@ object MagicRenderServerApi {
         val requestId = nextRequestId.getAndIncrement()
         sendIfPossible(player, PlayEffectPayload(requestId, effectId, mode, source, target))
         return requestId
+    }
+
+    private fun sendGroupPlay(
+        player: ServerPlayer,
+        groupKey: String,
+        source: MagicRenderAnchorPayload,
+        target: MagicRenderAnchorPayload?
+    ): Long {
+        if (!hasGroupBinding(groupKey)) return 0L
+        val requestId = nextRequestId.getAndIncrement()
+        sendIfPossible(player, groupPayload(requestId, groupKey, groupMode(), source, target))
+        return requestId
+    }
+
+    private fun groupPayload(
+        requestId: Long,
+        groupKey: String,
+        mode: MagicRenderPlayMode,
+        source: MagicRenderAnchorPayload,
+        target: MagicRenderAnchorPayload?
+    ): PlayEffectPayload {
+        return PlayEffectPayload(requestId, groupKey, mode, source, target)
+    }
+
+    private fun groupMode(): MagicRenderPlayMode {
+        return MagicRenderPlayMode.GROUP
+    }
+
+    private fun hasGroupBinding(groupKey: String): Boolean {
+        return MagicRenderConfigManager.current.groups.effectsFor(groupKey).isNotEmpty()
     }
 
     private fun sendStop(player: ServerPlayer, payload: StopEffectPayload) {

@@ -51,6 +51,27 @@ object MagicRenderClientApi {
 
     @JvmStatic
     @JvmOverloads
+    fun playGroup(groupKey: String, source: Entity, yOffsetScale: Double = 0.55): Long {
+        return playGroup(groupKey, entityAnchor(source, yOffsetScale))
+    }
+
+    @JvmStatic
+    fun playGroup(groupKey: String, source: Vec3): Long {
+        return playGroup(groupKey, TrailAnchor.WorldPoint(source))
+    }
+
+    @JvmStatic
+    fun playGroup(groupKey: String, source: TrailAnchor): Long {
+        val effectIds = loadedGroupEffectIds(groupKey)
+        if (effectIds.isEmpty()) return NO_HANDLE
+        val handles = effectIds
+            .map { effectId -> playEffect(effectId, source) }
+            .filter { it != NO_HANDLE }
+        return registerGroup(groupKey, source.entityIdOrNull(), handles)
+    }
+
+    @JvmStatic
+    @JvmOverloads
     fun playEffect(effectId: String, source: Entity, target: Entity, sourceYOffsetScale: Double = 0.55, targetYOffsetScale: Double = 0.55): Long {
         return playEffect(effectId, entityAnchor(source, sourceYOffsetScale), entityAnchor(target, targetYOffsetScale))
     }
@@ -75,6 +96,27 @@ object MagicRenderClientApi {
         MotionEffectManager.spawnBeam(effect, source, target)?.let { parts += MagicRenderComponentHandle(MagicRenderComponentType.BEAM, it) }
         AdvancedEffectManager.spawn(effect, source, target)?.let { parts += MagicRenderComponentHandle(MagicRenderComponentType.ADVANCED, it) }
         return register(effect.id, source.entityIdOrNull(), parts)
+    }
+
+    @JvmStatic
+    @JvmOverloads
+    fun playGroup(groupKey: String, source: Entity, target: Entity, sourceYOffsetScale: Double = 0.55, targetYOffsetScale: Double = 0.55): Long {
+        return playGroup(groupKey, entityAnchor(source, sourceYOffsetScale), entityAnchor(target, targetYOffsetScale))
+    }
+
+    @JvmStatic
+    fun playGroup(groupKey: String, source: Vec3, target: Vec3): Long {
+        return playGroup(groupKey, TrailAnchor.WorldPoint(source), TrailAnchor.WorldPoint(target))
+    }
+
+    @JvmStatic
+    fun playGroup(groupKey: String, source: TrailAnchor, target: TrailAnchor): Long {
+        val effectIds = loadedGroupEffectIds(groupKey)
+        if (effectIds.isEmpty()) return NO_HANDLE
+        val handles = effectIds
+            .map { effectId -> playEffect(effectId, source, target) }
+            .filter { it != NO_HANDLE }
+        return registerGroup(groupKey, source.entityIdOrNull(), handles)
     }
 
     @JvmStatic
@@ -169,6 +211,18 @@ object MagicRenderClientApi {
     }
 
     @JvmStatic
+    @JvmOverloads
+    fun bindGroup(groupKey: String, entity: Entity, yOffsetScale: Double = 0.55): Long {
+        return playGroup(groupKey, entity, yOffsetScale)
+    }
+
+    @JvmStatic
+    @JvmOverloads
+    fun bindEntityGroup(groupKey: String, entity: Entity, yOffsetScale: Double = 0.55): Long {
+        return bindGroup(groupKey, entity, yOffsetScale)
+    }
+
+    @JvmStatic
     fun stop(handle: Long): Boolean {
         val session = sessions.remove(handle) ?: return false
         stopParts(session.parts)
@@ -180,6 +234,16 @@ object MagicRenderClientApi {
         pruneFinishedSessions()
         val matching = sessions.values
             .filter { it.effectId == effectId }
+            .map { it.handle }
+        matching.forEach(::stop)
+        return matching.size
+    }
+
+    @JvmStatic
+    fun stopGroup(groupKey: String): Int {
+        pruneFinishedSessions()
+        val matching = sessions.values
+            .filter { it.groupKey == groupKey }
             .map { it.handle }
         matching.forEach(::stop)
         return matching.size
@@ -253,6 +317,17 @@ object MagicRenderClientApi {
     }
 
     @JvmStatic
+    fun loadedGroupEffectIds(groupKey: String): List<String> {
+        return MagicRenderConfigManager.current.groups.effectsFor(groupKey)
+            .filter { effect(it) != null }
+    }
+
+    @JvmStatic
+    fun loadedGroupKeys(): Set<String> {
+        return MagicRenderConfigManager.current.groups.bindingKeys()
+    }
+
+    @JvmStatic
     @JvmOverloads
     fun entityAnchor(entity: Entity, yOffsetScale: Double = 0.55): TrailAnchor.Entity {
         return TrailAnchor.Entity(entity.id, Vec3(0.0, entity.getBbHeight().toDouble() * yOffsetScale, 0.0))
@@ -282,6 +357,21 @@ object MagicRenderClientApi {
         sessions[handle] = MagicRenderEffectSession(
             handle = handle,
             effectId = effectId,
+            groupKey = null,
+            sourceEntityId = sourceEntityId,
+            parts = parts
+        )
+        return handle
+    }
+
+    private fun registerGroup(groupKey: String, sourceEntityId: Int?, childHandles: List<Long>): Long {
+        if (childHandles.isEmpty()) return NO_HANDLE
+        val parts = childHandles.map { MagicRenderComponentHandle(MagicRenderComponentType.SESSION, it) }
+        val handle = nextApiHandle.getAndIncrement()
+        sessions[handle] = MagicRenderEffectSession(
+            handle = handle,
+            effectId = groupKey,
+            groupKey = groupKey,
             sourceEntityId = sourceEntityId,
             parts = parts
         )
@@ -291,6 +381,7 @@ object MagicRenderClientApi {
     private fun stopParts(parts: List<MagicRenderComponentHandle>) {
         for (part in parts) {
             when (part.type) {
+                MagicRenderComponentType.SESSION -> stop(part.handle)
                 MagicRenderComponentType.TRAIL,
                 MagicRenderComponentType.BEAM -> MotionEffectManager.stop(part.handle)
                 MagicRenderComponentType.MAGIC_CIRCLE -> MagicCircleManager.stop(part.handle)
@@ -307,6 +398,7 @@ object MagicRenderClientApi {
 
     private fun isPartActive(part: MagicRenderComponentHandle): Boolean {
         return when (part.type) {
+            MagicRenderComponentType.SESSION -> sessions.containsKey(part.handle)
             MagicRenderComponentType.TRAIL,
             MagicRenderComponentType.BEAM -> MotionEffectManager.isActive(part.handle)
             MagicRenderComponentType.MAGIC_CIRCLE -> MagicCircleManager.isActive(part.handle)
@@ -328,6 +420,7 @@ object MagicRenderClientApi {
 data class MagicRenderEffectSession(
     val handle: Long,
     val effectId: String,
+    val groupKey: String?,
     val sourceEntityId: Int?,
     val parts: List<MagicRenderComponentHandle>
 )
@@ -338,6 +431,7 @@ data class MagicRenderComponentHandle(
 )
 
 enum class MagicRenderComponentType {
+    SESSION,
     TRAIL,
     BEAM,
     MAGIC_CIRCLE,

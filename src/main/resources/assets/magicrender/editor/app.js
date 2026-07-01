@@ -87,6 +87,12 @@ const translations = {
     bloomLayers: "Bloom Layers",
     bloomScaleStep: "Bloom Scale Step",
     bloomAlphaFalloff: "Bloom Alpha Falloff",
+    glowEnabled: "True Glow Enabled",
+    glowIntensity: "Glow Intensity",
+    glowRadius: "Glow Radius",
+    glowIterations: "Glow Iterations",
+    glowDownsample: "Glow Downsample",
+    glowThreshold: "Glow Threshold",
     coreEnabled: "Core Glow Enabled",
     coreRadius: "Core Radius",
     corePulseAmplitude: "Core Pulse",
@@ -192,6 +198,12 @@ const translations = {
     bloomLayers: "泛光层数",
     bloomScaleStep: "泛光放大倍率",
     bloomAlphaFalloff: "泛光透明衰减",
+    glowEnabled: "启用真实辉光",
+    glowIntensity: "辉光强度",
+    glowRadius: "辉光半径",
+    glowIterations: "辉光迭代",
+    glowDownsample: "辉光降采样",
+    glowThreshold: "辉光阈值",
     coreEnabled: "启用核心光团",
     coreRadius: "核心半径",
     corePulseAmplitude: "核心脉冲",
@@ -279,7 +291,40 @@ const helpText = {
     "preview.fixedDistance": "Distance in blocks for fixed preview target. Larger values preview longer beams/trails.",
     "preview.sourceHeightOffset": "Vertical offset from source entity feet. 0.55 is around body height; larger values move source upward.",
     "preview.targetHeightOffset": "Vertical offset from target entity feet. Use it to aim at body/head height.",
-    "preview.fallbackToFixedDistance": "If true, preview falls back to fixed distance when no target entity/point is found."
+    "preview.fallbackToFixedDistance": "If true, preview falls back to fixed distance when no target entity/point is found.",
+    "components.advanced.enabled": "Master switch for all advanced layers. Turn this off to keep the advanced settings in JSON while hiding bloom, core glow, emitters, ribbons, circle layers and bursts.",
+    "components.advanced.bloom.layers": "Legacy glow approximation layer count. This duplicates translucent quads around sprites; it is not real post-process bloom. Keep it low when True Glow is enabled.",
+    "components.advanced.bloom.scaleStep": "Legacy approximation scale between duplicated glow shells. True Glow uses the Glow Radius field instead.",
+    "components.advanced.bloom.alphaFalloff": "Legacy approximation opacity falloff. True Glow uses post-process blur and intensity instead.",
+    "components.advanced.glow.enabled": "Enables true screen-space glow for advanced ribbons, circles, particles and core sprites. This renders bright geometry into an offscreen buffer, blurs it, then adds it back to the scene.",
+    "components.advanced.glow.intensity": "Final additive strength of the blurred glow. Higher values create stronger light spill; too high can wash out colors.",
+    "components.advanced.glow.radius": "Blur radius multiplier. Larger values spread light farther from ribbons and glyphs; smaller values keep a tight neon edge.",
+    "components.advanced.glow.iterations": "Number of blur passes. More iterations make smoother, wider glow but cost more GPU time. 3-6 is a practical range.",
+    "components.advanced.glow.downsample": "Resolution divisor for the glow buffer. 2 is sharp, 4 is cheaper and softer, 1 is highest quality but most expensive.",
+    "components.advanced.glow.threshold": "Brightness cutoff before blur in the game renderer. 0 glows all advanced additive geometry; higher values keep only the brightest parts. The web preview approximates this setting.",
+    "components.advanced.core.enabled": "Enables the central glow sprite at the source. Use it when the effect needs a visible energy core instead of only trails or particles.",
+    "components.advanced.core.color": "Color of the central glow. Use alpha in #RRGGBBAA to control how strongly the core covers nearby elements.",
+    "components.advanced.core.radius": "Base radius of the central glow in blocks. Larger values create a bigger orb; smaller values make a compact highlight.",
+    "components.advanced.core.pulseAmplitude": "How much the core radius pulses over time. 0 keeps a steady size; higher values make stronger breathing or heartbeat motion.",
+    "components.advanced.particleEmitters.0.shape": "Emitter volume shape. sphere spreads particles in all directions, column stacks them vertically, ring keeps them around a circle, box fills a rectangular volume.",
+    "components.advanced.particleEmitters.0.count": "Particle count for the first emitter. Higher values make denser point clouds but cost more to render.",
+    "components.advanced.particleEmitters.0.color.start": "Particle color at the start of its life. Use this with end color to create color shifts over time.",
+    "components.advanced.particleEmitters.0.color.end": "Particle color near the end of its life. Lower alpha makes particles fade out instead of disappearing sharply.",
+    "components.advanced.particleEmitters.0.size.start": "Particle size when spawned. Larger start size makes the cloud feel heavier and brighter.",
+    "components.advanced.particleEmitters.0.size.end": "Particle size near the end of life. Smaller end size creates shrinking sparks; similar values keep stable dots.",
+    "components.advanced.particleEmitters.0.radius": "Horizontal spread radius for sphere, ring and column emitters. Larger values widen the particle field.",
+    "components.advanced.particleEmitters.0.height": "Vertical spread height for column and box-like emitters. Larger values create taller pillars or volumes.",
+    "components.advanced.particleEmitters.0.swirlSpeed": "Angular swirl speed for particles. Positive and negative values rotate in opposite directions; 0 disables swirl motion.",
+    "components.advanced.ribbonBundles.0.count": "Number of flowing ribbons in the first bundle. More ribbons create a fuller energy weave but increase geometry cost.",
+    "components.advanced.ribbonBundles.0.length": "Length of each ribbon in samples/space. Larger values leave longer flowing strands; smaller values make compact arcs.",
+    "components.advanced.ribbonBundles.0.amplitude": "Wave height of the ribbon bundle. Higher values make wider sine-wave motion; 0 keeps ribbons close to their path.",
+    "components.advanced.ribbonBundles.0.frequency": "Wave frequency along each ribbon. Higher values create more ripples; lower values create broad smooth curves.",
+    "components.advanced.ribbonBundles.0.twist": "Amount of twist around the bundle path. Higher values make the ribbons braid around each other more strongly.",
+    "components.advanced.ribbonBundles.0.flowSpeed": "Animation speed of the ribbon texture/phase. Higher values make the bundle stream faster; 0 freezes the flow.",
+    "components.advanced.circleLayers.0.radius": "Radius of the first advanced circle layer. Larger values place the layer farther from the source and make the seal cover more area.",
+    "components.advanced.circleLayers.0.glyphs": "Number of glyph marks on the advanced circle layer. 0 removes marks; higher values make the ring denser and more ornate.",
+    "components.advanced.radialBursts.0.rays": "Number of radial burst rays. Higher values create a fuller starburst; lower values make distinct spikes.",
+    "components.advanced.radialBursts.0.length": "Length of each burst ray in blocks. Larger values make sharper, farther-reaching spikes; smaller values keep the burst close to the core."
   },
   zh: {
     "id": "特效唯一 ID。格式必须是 namespace:path，并使用小写。示例：magicrender:fire_ring。它会成为导出文件名和命令使用的 ID。",
@@ -337,7 +382,40 @@ const helpText = {
     "preview.fixedDistance": "固定预览目标距离，单位方块。越大越适合预览长光束/长轨迹。",
     "preview.sourceHeightOffset": "源点相对实体脚底的高度偏移。0.55 接近身体高度；越大源点越高。",
     "preview.targetHeightOffset": "目标点相对目标实体脚底的高度偏移。可用于瞄准身体或头部高度。",
-    "preview.fallbackToFixedDistance": "启用后，如果找不到实体/命中点，会回退到固定距离预览。"
+    "preview.fallbackToFixedDistance": "启用后，如果找不到实体/命中点，会回退到固定距离预览。",
+    "components.advanced.enabled": "高级效果的总开关。关闭后会保留 JSON 设置，但不显示泛光、核心光团、粒子、流光束、法阵层和放射光刺。",
+    "components.advanced.bloom.layers": "旧式辉光近似的复制层数。它只是围绕精灵叠加半透明面片，不是真正的后处理 Bloom。启用真实辉光后建议保持较低。",
+    "components.advanced.bloom.scaleStep": "旧式近似中每层面片的放大倍率。真实辉光请使用“辉光半径”。",
+    "components.advanced.bloom.alphaFalloff": "旧式近似中外层面片的透明衰减。真实辉光会使用后处理模糊和强度控制。",
+    "components.advanced.glow.enabled": "启用高级丝带、法阵、粒子和核心精灵的真实屏幕空间辉光。发光几何会先渲染到离屏缓冲，再模糊并叠加回画面。",
+    "components.advanced.glow.intensity": "模糊辉光最终叠加到画面的强度。数值越高光溢出越明显；过高会洗掉颜色层次。",
+    "components.advanced.glow.radius": "模糊半径倍率。数值越大，光从丝带和符文向外扩散越远；数值越小则保持紧致霓虹边缘。",
+    "components.advanced.glow.iterations": "模糊迭代次数。次数越多辉光越平滑、越宽，但 GPU 开销越高。常用范围是 3-6。",
+    "components.advanced.glow.downsample": "辉光缓冲的降采样倍率。2 较清晰，4 更省性能且更柔，1 质量最高但开销最大。",
+    "components.advanced.glow.threshold": "游戏渲染器中模糊前的亮度阈值。0 表示所有高级加法几何都参与辉光；数值越高越只保留最亮部分。Web 预览只做近似显示。",
+    "components.advanced.core.enabled": "启用源点中心的光团。当效果需要明显能量核心，而不只是轨迹或粒子时使用。",
+    "components.advanced.core.color": "核心光团颜色。可以用 #RRGGBBAA 里的 alpha 控制它对周围元素的覆盖强度。",
+    "components.advanced.core.radius": "核心光团的基础半径，单位为方块。数值越大光球越大；数值越小则是更紧凑的高光。",
+    "components.advanced.core.pulseAmplitude": "核心半径随时间脉冲的幅度。0 表示大小恒定；数值越高，呼吸或心跳感越强。",
+    "components.advanced.particleEmitters.0.shape": "粒子发射器体积形状。sphere 向四周扩散，column 竖直堆叠，ring 围绕圆环，box 填充长方体区域。",
+    "components.advanced.particleEmitters.0.count": "第一个发射器的粒子数量。数值越高，点云越密，但渲染开销也越高。",
+    "components.advanced.particleEmitters.0.color.start": "粒子生命开始时的颜色。和结束颜色搭配可以做出随时间变色的效果。",
+    "components.advanced.particleEmitters.0.color.end": "粒子生命结束附近的颜色。降低 alpha 可以让粒子淡出，而不是突然消失。",
+    "components.advanced.particleEmitters.0.size.start": "粒子生成时的大小。起始尺寸越大，点云看起来越厚重、越亮。",
+    "components.advanced.particleEmitters.0.size.end": "粒子生命结束附近的大小。较小的结束尺寸会形成收缩火花；接近起始值则保持稳定光点。",
+    "components.advanced.particleEmitters.0.radius": "粒子发射器的水平扩散半径。对 sphere、ring 和 column 形状影响明显，数值越大粒子范围越宽。",
+    "components.advanced.particleEmitters.0.height": "粒子发射器的垂直扩散高度。对 column 和类 box 效果最明显，数值越大柱体或体积越高。",
+    "components.advanced.particleEmitters.0.swirlSpeed": "粒子的环绕旋转速度。正负值旋转方向相反；0 表示不做旋流运动。",
+    "components.advanced.ribbonBundles.0.count": "第一组流光束的条带数量。数量越多，能量编织感越饱满，但几何开销也更高。",
+    "components.advanced.ribbonBundles.0.length": "每条流光的长度。数值越大，拖出的流动线条越长；数值越小则更紧凑。",
+    "components.advanced.ribbonBundles.0.amplitude": "流光束的波动幅度。数值越高，正弦摆动越宽；0 会让流光更贴近原本路径。",
+    "components.advanced.ribbonBundles.0.frequency": "流光沿路径的波动频率。数值越高细密波纹越多；数值越低则是大弧度的平滑曲线。",
+    "components.advanced.ribbonBundles.0.twist": "流光围绕束路径扭转的强度。数值越高，条带互相缠绕的编织感越强。",
+    "components.advanced.ribbonBundles.0.flowSpeed": "流光纹理或相位的动画速度。数值越高，能量流动越快；0 会冻结流动。",
+    "components.advanced.circleLayers.0.radius": "第一个高级法阵层的半径。数值越大，层离源点越远，封印覆盖面积也越大。",
+    "components.advanced.circleLayers.0.glyphs": "高级法阵层上的符文数量。0 表示不放符文；数值越高，圆环越密集、越华丽。",
+    "components.advanced.radialBursts.0.rays": "放射爆发光刺的数量。数值越高，星芒越饱满；数值越低，单条尖刺更明显。",
+    "components.advanced.radialBursts.0.length": "每条放射光刺的长度，单位为方块。数值越大，尖刺越锐利且伸展越远；数值越小则更贴近核心。"
   }
 };
 
@@ -433,6 +511,12 @@ const fields = {
     ["components.advanced.bloom.layers", "bloomLayers", "number"],
     ["components.advanced.bloom.scaleStep", "bloomScaleStep", "number"],
     ["components.advanced.bloom.alphaFalloff", "bloomAlphaFalloff", "number"],
+    ["components.advanced.glow.enabled", "glowEnabled", "checkbox"],
+    ["components.advanced.glow.intensity", "glowIntensity", "number"],
+    ["components.advanced.glow.radius", "glowRadius", "number"],
+    ["components.advanced.glow.iterations", "glowIterations", "number"],
+    ["components.advanced.glow.downsample", "glowDownsample", "number"],
+    ["components.advanced.glow.threshold", "glowThreshold", "number"],
     ["components.advanced.core.enabled", "coreEnabled", "checkbox"],
     ["components.advanced.core.color", "colorStart", "color"],
     ["components.advanced.core.radius", "coreRadius", "number"],
@@ -574,6 +658,7 @@ function ensureAdvancedDefaults() {
   const advanced = state.components.advanced;
   advanced.enabled ??= false;
   advanced.bloom ??= { enabled: true, layers: 3, scaleStep: 1.8, alphaFalloff: 0.45 };
+  advanced.glow ??= { enabled: true, intensity: 1.35, radius: 1.0, iterations: 4, downsample: 2, threshold: 0.0 };
   advanced.core ??= { enabled: false, color: "#FFFFFFFF", radius: 0.6, pulseAmplitude: 0.18, pulseSpeed: 0.12, texture: "minecraft:textures/particle/flash.png", blendMode: "additive" };
   advanced.particleEmitters ??= [];
   advanced.ribbonBundles ??= [];
@@ -629,6 +714,7 @@ function initPreview3d() {
   camera.position.set(6, 4.2, 7);
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.autoClear = false;
   const controls = new OrbitControls(camera, canvas);
   controls.enableDamping = true;
   controls.dampingFactor = 0.08;
@@ -645,7 +731,8 @@ function initPreview3d() {
   scene.add(light);
   scene.add(new THREE.AmbientLight(0x7f95aa, 1.2));
 
-  preview3d = { canvas, scene, camera, renderer, controls, root, animated: [], lastWidth: 0, lastHeight: 0 };
+  const clock = new THREE.Clock();
+  preview3d = { canvas, scene, camera, renderer, controls, root, animated: [], lastWidth: 0, lastHeight: 0, clock, time: 0, tick: 0, glowScene: new THREE.Scene(), glowTarget: null, trailHistory: [] };
   window.addEventListener("resize", () => {
     resizePreview3d();
     renderPreview3d();
@@ -653,6 +740,10 @@ function initPreview3d() {
   const animate = () => {
     if (!preview3d) return;
     requestAnimationFrame(animate);
+    const delta = Math.min(0.05, preview3d.clock.getDelta());
+    preview3d.time += delta;
+    preview3d.tick = preview3d.time * 20;
+    updatePreviewDynamics(preview3d);
     for (const item of preview3d.animated) item.rotation.y += item.userData.spin ?? 0.01;
     preview3d.controls.update();
     renderPreview3d();
@@ -663,13 +754,18 @@ function initPreview3d() {
 function rebuildPreview3d() {
   const view = preview3d;
   clearGroup(view.root);
+  clearGroup(view.glowScene);
   view.animated = [];
+  view.trailHistory = [];
+  view.time = 0;
+  view.tick = 0;
+  view.clock.getDelta();
   const source = new THREE.Vector3(0, state.preview.sourceHeightOffset || 0, 0);
   const target = new THREE.Vector3(Math.max(1, state.preview.fixedDistance || 4), state.preview.targetHeightOffset || 0.8, 0);
   addPoint(view.root, source, 0x67d8ff);
   addPoint(view.root, target, 0xffd166);
   if (state.components.beam.enabled) addBeam(view.root, source, target);
-  if (state.components.trail.enabled) addTrail(view.root, source);
+  if (state.components.trail.enabled) addTrail(view, source);
   if (state.components.magicCircle.enabled) addMagicCircle(view, source);
   if (state.components.advanced?.enabled) addAdvanced(view, source, target);
 }
@@ -701,14 +797,14 @@ function addBeam(root, source, target) {
   addTubeLikeMarkers(root, points, Math.max(0.015, (beam.width || 0.08) * 0.18), colorNumber(beam.color?.end || beam.color?.start || "#67d8ff"));
 }
 
-function addTrail(root, source) {
+function addTrail(view, source) {
   const trail = state.components.trail;
-  const points = buildTrailPoints(source);
-  root.add(new THREE.Line(
-    new THREE.BufferGeometry().setFromPoints(points),
-    new THREE.LineBasicMaterial({ color: colorNumber(trail.color?.start || "#ffffff"), transparent: true, opacity: alphaValue(trail.color?.start || "#ffffff") })
-  ));
-  addTubeLikeMarkers(root, points, Math.max(0.01, (trail.width?.start || 0.08) * 0.12), colorNumber(trail.color?.end || trail.color?.start || "#ffffff"));
+  const mesh = new THREE.Mesh(new THREE.BufferGeometry(), ribbonMaterial(trail.color?.start || "#ffffff", trail.blendMode));
+  mesh.userData.dynamicTrail = true;
+  mesh.userData.source = source.clone();
+  mesh.userData.trail = trail;
+  view.root.add(mesh);
+  addGlowClone(view, mesh);
 }
 
 function addMagicCircle(view, source) {
@@ -764,6 +860,7 @@ function addCoreGlow(root, source, core, bloom) {
   sprite.position.copy(source);
   sprite.scale.setScalar(radius * 2);
   root.add(sprite);
+  addGlowClone(preview3d, sprite);
   addSpriteBloom(root, source, color, radius, bloom, alphaValue(core.color));
 }
 
@@ -802,7 +899,9 @@ function addParticleEmitter(root, source, emitter, bloom) {
   }
   geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
   geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
-  root.add(new THREE.Points(geometry, new THREE.PointsMaterial({ size: emitter.size?.start || emitter.sizeStart || 0.08, vertexColors: true, transparent: true, opacity: 0.9, depthWrite: false, blending: THREE.AdditiveBlending })));
+  const points = new THREE.Points(geometry, new THREE.PointsMaterial({ size: emitter.size?.start || emitter.sizeStart || 0.08, vertexColors: true, transparent: true, opacity: 0.9, depthWrite: false, blending: THREE.AdditiveBlending }));
+  root.add(points);
+  addGlowClone(preview3d, points);
   if (bloom?.enabled && count > 0) addSpriteBloom(root, source, colorNumber(emitter.color?.start || emitter.colorStart || "#ffffff"), Math.max(0.15, (emitter.radius || 1.2) * 0.35), bloom, 0.18);
 }
 
@@ -821,23 +920,39 @@ function particlePreviewPosition(source, emitter, seed, index) {
 
 function addRibbonBundle(root, source, target, bundle) {
   const count = Math.max(0, Math.min(48, Math.round(bundle.count || 0)));
+  for (let line = 0; line < count; line++) {
+    const points = ribbonBundlePoints(source, target, bundle, line, preview3d.tick);
+    const mesh = buildRibbonMesh(
+      points,
+      bundle.width?.start || bundle.widthStart || 0.1,
+      bundle.width?.end || bundle.widthEnd || 0.02,
+      bundle.color?.start || bundle.colorStart || "#ffffff",
+      bundle.color?.end || bundle.colorEnd || "#ffffff",
+      preview3d.camera.position
+    );
+    mesh.material = ribbonMaterial(bundle.color?.start || bundle.colorStart || "#ffffff", bundle.blendMode);
+    mesh.material.vertexColors = true;
+    mesh.userData.ribbonBundle = { source: source.clone(), target: target.clone(), bundle, line };
+    root.add(mesh);
+    addGlowClone(preview3d, mesh);
+  }
+}
+
+function ribbonBundlePoints(source, target, bundle, line, tick) {
   const direction = target.clone().sub(source).normalize();
   const side = new THREE.Vector3().crossVectors(direction, new THREE.Vector3(0, 1, 0)).normalize();
   if (!Number.isFinite(side.x)) side.set(0, 0, 1);
   const up = new THREE.Vector3().crossVectors(side, direction).normalize();
-  for (let line = 0; line < count; line++) {
-    const points = [];
-    const samples = Math.max(8, Math.min(180, Math.round(bundle.samples || 96)));
-    const phase = line * (bundle.phaseStep || 24) * Math.PI / 180;
-    for (let i = 0; i < samples; i++) {
-      const t = i / (samples - 1);
-      const wave = Math.sin(t * Math.PI * 2 * (bundle.frequency || 1.4) + phase) * (bundle.amplitude || 0.8);
-      const twist = Math.cos(t * Math.PI * 2 * (bundle.frequency || 1.4) + phase) * (bundle.amplitude || 0.8) * (bundle.twist || 0.45);
-      points.push(source.clone().add(direction.clone().multiplyScalar((bundle.length || 8) * t)).add(side.clone().multiplyScalar(wave)).add(up.clone().multiplyScalar(twist)));
-    }
-    root.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(points), new THREE.LineBasicMaterial({ color: colorNumber(bundle.color?.start || bundle.colorStart || "#ffffff"), transparent: true, opacity: 0.85, blending: THREE.AdditiveBlending })));
-    addTubeLikeMarkers(root, points, Math.max(0.008, (bundle.width?.start || bundle.widthStart || 0.1) * 0.08), colorNumber(bundle.color?.end || bundle.colorEnd || "#ffffff"));
+  const points = [];
+  const samples = Math.max(8, Math.min(180, Math.round(bundle.samples || 96)));
+  const phase = (line * (bundle.phaseStep || 24) + tick * (bundle.flowSpeed || 0) * 8) * Math.PI / 180;
+  for (let i = 0; i < samples; i++) {
+    const t = i / (samples - 1);
+    const wave = Math.sin(t * Math.PI * 2 * (bundle.frequency || 1.4) + phase) * (bundle.amplitude || 0.8);
+    const twist = Math.cos(t * Math.PI * 2 * (bundle.frequency || 1.4) + phase) * (bundle.amplitude || 0.8) * (bundle.twist || 0.45);
+    points.push(source.clone().add(direction.clone().multiplyScalar((bundle.length || 8) * t)).add(side.clone().multiplyScalar(wave)).add(up.clone().multiplyScalar(twist)));
   }
+  return points;
 }
 
 function addCircleLayer(view, source, layer) {
@@ -850,6 +965,7 @@ function addCircleLayer(view, source, layer) {
   if (layer.facing === "horizontal") mesh.rotation.x = Math.PI / 2;
   mesh.userData.spin = (layer.rotationSpeed || 0) * Math.PI / 180 / 8;
   view.root.add(mesh);
+  addGlowClone(view, mesh);
   view.animated.push(mesh);
   const glyphs = Math.max(0, Math.min(96, Math.round(layer.glyphs || 0)));
   for (let i = 0; i < glyphs; i++) {
@@ -858,6 +974,7 @@ function addCircleLayer(view, source, layer) {
     marker.position.set(source.x + Math.cos(angle) * layer.radius, source.y, source.z + Math.sin(angle) * layer.radius);
     marker.rotation.y = -angle;
     view.root.add(marker);
+    addGlowClone(view, marker);
   }
 }
 
@@ -867,8 +984,178 @@ function addRadialBurst(root, source, burst) {
     const jitter = (randomSeed(i + 31) - 0.5) * (burst.randomJitter || 0.15);
     const angle = i / Math.max(1, rays) * Math.PI * 2 + jitter;
     const end = source.clone().add(new THREE.Vector3(Math.cos(angle) * (burst.length || 2.8), Math.sin(angle * 1.7) * (burst.length || 2.8) * 0.15, Math.sin(angle) * (burst.length || 2.8)));
-    root.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([source, end]), new THREE.LineBasicMaterial({ color: colorNumber(burst.color?.start || burst.colorStart || "#ffffff"), transparent: true, opacity: 0.85, blending: THREE.AdditiveBlending })));
+    const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints([source, end]), new THREE.LineBasicMaterial({ color: colorNumber(burst.color?.start || burst.colorStart || "#ffffff"), transparent: true, opacity: 0.85, blending: THREE.AdditiveBlending }));
+    root.add(line);
+    addGlowClone(preview3d, line);
   }
+}
+
+function ribbonMaterial(color, blendMode = "additive") {
+  return new THREE.MeshBasicMaterial({
+    color: colorNumber(color || "#ffffff"),
+    transparent: true,
+    opacity: alphaValue(color || "#ffffff"),
+    side: THREE.DoubleSide,
+    depthWrite: false,
+    blending: blendMode === "alpha" ? THREE.NormalBlending : THREE.AdditiveBlending
+  });
+}
+
+function addGlowClone(view, mesh) {
+  if (!state.components.advanced?.glow?.enabled) return;
+  const sourceMaterial = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material;
+  const glowMaterial = new THREE.MeshBasicMaterial({
+    color: sourceMaterial?.color?.clone?.() ?? new THREE.Color(0xffffff),
+    transparent: true,
+    opacity: Math.min(1, (sourceMaterial?.opacity ?? 1) * (state.components.advanced.glow.intensity ?? 1.35)),
+    side: THREE.DoubleSide,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending
+  });
+  let clone;
+  if (mesh.isPoints) {
+    glowMaterial.size = sourceMaterial?.size;
+    clone = new THREE.Points(mesh.geometry, sourceMaterial.clone());
+    clone.material.opacity = Math.min(1, (sourceMaterial.opacity ?? 1) * (state.components.advanced.glow.intensity ?? 1.35));
+    clone.material.blending = THREE.AdditiveBlending;
+    clone.material.depthWrite = false;
+  } else if (mesh.isLine) {
+    clone = new THREE.Line(mesh.geometry, sourceMaterial.clone());
+    clone.material.opacity = Math.min(1, (sourceMaterial.opacity ?? 1) * (state.components.advanced.glow.intensity ?? 1.35));
+    clone.material.blending = THREE.AdditiveBlending;
+    clone.material.depthWrite = false;
+  } else if (mesh.isSprite) {
+    clone = new THREE.Sprite(sourceMaterial.clone());
+    clone.material.opacity = Math.min(1, (sourceMaterial.opacity ?? 1) * (state.components.advanced.glow.intensity ?? 1.35));
+    clone.material.blending = THREE.AdditiveBlending;
+    clone.material.depthWrite = false;
+  } else {
+    clone = new THREE.Mesh(mesh.geometry, glowMaterial);
+  }
+  clone.userData.sourceMesh = mesh;
+  mesh.userData.glowClone = clone;
+  view.glowScene.add(clone);
+}
+
+function buildRibbonMesh(points, widthStart, widthEnd, colorStart, colorEnd, cameraPosition) {
+  const geometry = new THREE.BufferGeometry();
+  if (points.length < 2) return new THREE.Mesh(geometry, ribbonMaterial(colorStart));
+  const positions = [];
+  const colors = [];
+  const uvs = [];
+  let distance = 0;
+  const colorA = new THREE.Color(colorNumber(colorStart));
+  const colorB = new THREE.Color(colorNumber(colorEnd));
+  const sideVectors = points.map((_, index) => ribbonSide(points, index, cameraPosition));
+  for (let i = 0; i < points.length - 1; i++) {
+    const t0 = i / Math.max(1, points.length - 1);
+    const t1 = (i + 1) / Math.max(1, points.length - 1);
+    const p0 = points[i];
+    const p1 = points[i + 1];
+    const nextDistance = distance + p0.distanceTo(p1);
+    const half0 = lerp(widthStart, widthEnd, t0) * 0.5;
+    const half1 = lerp(widthStart, widthEnd, t1) * 0.5;
+    const left0 = p0.clone().addScaledVector(sideVectors[i], -half0);
+    const right0 = p0.clone().addScaledVector(sideVectors[i], half0);
+    const left1 = p1.clone().addScaledVector(sideVectors[i + 1], -half1);
+    const right1 = p1.clone().addScaledVector(sideVectors[i + 1], half1);
+    pushRibbonVertex(positions, colors, uvs, left0, colorA, colorB, t0, 0, distance);
+    pushRibbonVertex(positions, colors, uvs, right0, colorA, colorB, t0, 1, distance);
+    pushRibbonVertex(positions, colors, uvs, right1, colorA, colorB, t1, 1, nextDistance);
+    pushRibbonVertex(positions, colors, uvs, left0, colorA, colorB, t0, 0, distance);
+    pushRibbonVertex(positions, colors, uvs, right1, colorA, colorB, t1, 1, nextDistance);
+    pushRibbonVertex(positions, colors, uvs, left1, colorA, colorB, t1, 0, nextDistance);
+    distance = nextDistance;
+  }
+  geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
+  geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+  geometry.computeBoundingSphere();
+  const mesh = new THREE.Mesh(geometry, ribbonMaterial(colorStart));
+  mesh.material.vertexColors = true;
+  return mesh;
+}
+
+function pushRibbonVertex(positions, colors, uvs, point, colorA, colorB, t, u, v) {
+  const color = colorA.clone().lerp(colorB, t);
+  positions.push(point.x, point.y, point.z);
+  colors.push(color.r, color.g, color.b);
+  uvs.push(u, v);
+}
+
+function ribbonSide(points, index, cameraPosition) {
+  const prev = points[Math.max(0, index - 1)];
+  const next = points[Math.min(points.length - 1, index + 1)];
+  const direction = next.clone().sub(prev).normalize();
+  const reference = cameraPosition.clone().sub(points[index]).normalize();
+  const side = direction.clone().cross(reference);
+  if (side.lengthSq() < 1e-6) return new THREE.Vector3(1, 0, 0);
+  return side.normalize();
+}
+
+function updatePreviewDynamics(view) {
+  const source = new THREE.Vector3(0, state.preview.sourceHeightOffset || 0, 0);
+  updateTrailHistory(view, source);
+  view.root.traverse((node) => {
+    if (node.userData.dynamicTrail) updateTrailMesh(node, view.camera.position);
+    if (node.userData.ribbonBundle) updateRibbonBundleMesh(node, view.tick, view.camera.position);
+    if (node.userData.glowClone) syncGlowClone(node);
+  });
+  view.glowScene.traverse((node) => {
+    if (node.userData.sourceMesh) {
+      node.geometry = node.userData.sourceMesh.geometry;
+      node.position.copy(node.userData.sourceMesh.position);
+      node.rotation.copy(node.userData.sourceMesh.rotation);
+      node.scale.copy(node.userData.sourceMesh.scale);
+    }
+  });
+}
+
+function updateTrailHistory(view, source) {
+  if (!state.components.trail.enabled) return;
+  const trail = state.components.trail;
+  const current = source.clone().add(vectorFromOffset(motionOffset(trail.motion, view.tick)));
+  const last = view.trailHistory.at(-1);
+  if (!last || trail.sampleEveryTick || last.position.distanceTo(current) >= (trail.minSampleDistance || 0.04)) {
+    view.trailHistory.push({ position: current, age: 0 });
+  }
+  for (const point of view.trailHistory) point.age += 1;
+  const lifetime = Math.max(1, trail.lifetimeTicks || 36);
+  view.trailHistory = view.trailHistory.filter((point) => point.age <= lifetime).slice(-(trail.maxPoints || 64));
+}
+
+function updateTrailMesh(mesh, cameraPosition) {
+  const trail = mesh.userData.trail;
+  const points = preview3d.trailHistory.map((point) => point.position);
+  const updated = buildRibbonMesh(points, trail.width?.start || 0.1, trail.width?.end || 0.0, trail.color?.start || "#ffffff", trail.color?.end || "#ffffff", cameraPosition);
+  mesh.geometry.dispose();
+  mesh.geometry = updated.geometry;
+  mesh.material.vertexColors = true;
+}
+
+function updateRibbonBundleMesh(mesh, tick, cameraPosition) {
+  const { source, target, bundle, line } = mesh.userData.ribbonBundle;
+  const points = ribbonBundlePoints(source, target, bundle, line, tick);
+  const updated = buildRibbonMesh(points, bundle.width?.start || bundle.widthStart || 0.1, bundle.width?.end || bundle.widthEnd || 0.02, bundle.color?.start || bundle.colorStart || "#ffffff", bundle.color?.end || bundle.colorEnd || "#ffffff", cameraPosition);
+  mesh.geometry.dispose();
+  mesh.geometry = updated.geometry;
+  mesh.material.vertexColors = true;
+}
+
+function syncGlowClone(mesh) {
+  const clone = mesh.userData.glowClone;
+  clone.geometry = mesh.geometry;
+  clone.position.copy(mesh.position);
+  clone.rotation.copy(mesh.rotation);
+  clone.scale.copy(mesh.scale);
+}
+
+function vectorFromOffset(offset) {
+  return new THREE.Vector3(offset.x || 0, offset.y || 0, offset.z || 0);
+}
+
+function lerp(a, b, t) {
+  return a + (b - a) * t;
 }
 
 function randomSeed(value) {
@@ -950,7 +1237,70 @@ function resizePreview3d() {
 function renderPreview3d() {
   if (!preview3d) return;
   resizePreview3d();
+  const glow = state?.components?.advanced?.glow;
+  if (!glow?.enabled) {
+    preview3d.renderer.setRenderTarget(null);
+    preview3d.renderer.setClearColor(0x0b0f14, 1);
+    preview3d.renderer.clear(true, true, true);
+    preview3d.renderer.render(preview3d.scene, preview3d.camera);
+    return;
+  }
+  ensurePreviewGlowTarget(preview3d, glow);
+  preview3d.renderer.setRenderTarget(preview3d.glowTarget);
+  preview3d.renderer.setClearColor(0x000000, 1);
+  preview3d.renderer.clear(true, true, true);
+  preview3d.renderer.render(preview3d.glowScene, preview3d.camera);
+  preview3d.renderer.setRenderTarget(null);
+  preview3d.renderer.setClearColor(0x0b0f14, 1);
+  preview3d.renderer.clear(true, true, true);
   preview3d.renderer.render(preview3d.scene, preview3d.camera);
+  compositePreviewGlow(preview3d, glow);
+}
+
+function ensurePreviewGlowTarget(view, glow) {
+  const divisor = Math.max(1, Math.min(8, Math.round(glow.downsample || 2)));
+  const width = Math.max(1, Math.floor(view.lastWidth / divisor));
+  const height = Math.max(1, Math.floor(view.lastHeight / divisor));
+  if (view.glowTarget && view.glowTarget.width === width && view.glowTarget.height === height) return;
+  view.glowTarget?.dispose();
+  view.glowTarget = new THREE.WebGLRenderTarget(width, height, { depthBuffer: false, stencilBuffer: false });
+}
+
+function compositePreviewGlow(view, glow) {
+  if (!view.glowQuadScene) {
+    view.glowQuadScene = new THREE.Scene();
+    view.glowQuadCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+    view.glowQuadMaterial = new THREE.MeshBasicMaterial({ map: view.glowTarget.texture, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });
+    view.glowQuad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), view.glowQuadMaterial);
+    view.glowQuadScene.add(view.glowQuad);
+  }
+  view.glowQuadMaterial.map = view.glowTarget.texture;
+  const iterations = Math.max(1, Math.min(12, Math.round(glow.iterations || 4)));
+  const radius = Math.max(0.25, glow.radius || 1);
+  const baseOpacity = Math.min(1, Math.max(0.02, (glow.intensity || 1.35) / iterations));
+  for (let pass = 0; pass <= iterations; pass++) {
+    const offset = pass === 0 ? 0 : radius * pass / iterations * 0.004;
+    const opacity = pass === 0 ? baseOpacity : baseOpacity * (1 - pass / (iterations + 1));
+    drawGlowQuad(view, 0, 0, opacity);
+    if (pass > 0) {
+      drawGlowQuad(view, offset, 0, opacity);
+      drawGlowQuad(view, -offset, 0, opacity);
+      drawGlowQuad(view, 0, offset, opacity);
+      drawGlowQuad(view, 0, -offset, opacity);
+      drawGlowQuad(view, offset * 0.707, offset * 0.707, opacity * 0.7);
+      drawGlowQuad(view, -offset * 0.707, offset * 0.707, opacity * 0.7);
+      drawGlowQuad(view, offset * 0.707, -offset * 0.707, opacity * 0.7);
+      drawGlowQuad(view, -offset * 0.707, -offset * 0.707, opacity * 0.7);
+    }
+  }
+}
+
+function drawGlowQuad(view, x, y, opacity) {
+  view.glowQuad.position.set(x, y, 0);
+  view.glowQuadMaterial.opacity = opacity;
+  view.renderer.setRenderTarget(null);
+  view.renderer.autoClear = false;
+  view.renderer.render(view.glowQuadScene, view.glowQuadCamera);
 }
 
 function resetPreviewCamera() {

@@ -304,6 +304,7 @@ data class ShockwaveComponent(
 data class AdvancedVisualComponent(
     val enabled: Boolean,
     val bloom: BloomApproximationComponent = BloomApproximationComponent(),
+    val glow: GlowPostComponent = GlowPostComponent(),
     val core: CoreGlowComponent = CoreGlowComponent(enabled = false),
     val particleEmitters: List<ParticleEmitterComponent> = emptyList(),
     val ribbonBundles: List<RibbonBundleComponent> = emptyList(),
@@ -316,6 +317,7 @@ data class AdvancedVisualComponent(
             return AdvancedVisualComponent(
                 enabled = json.boolean("enabled", true),
                 bloom = BloomApproximationComponent.parse(json.obj("bloom"), "$path.bloom", result),
+                glow = GlowPostComponent.parse(json.obj("glow"), "$path.glow", result),
                 core = CoreGlowComponent.parse(json.obj("core"), "$path.core", result),
                 particleEmitters = json.objectList("particleEmitters").take(8).mapIndexed { index, item ->
                     ParticleEmitterComponent.parse(item, common, "$path.particleEmitters[$index]", result)
@@ -329,6 +331,29 @@ data class AdvancedVisualComponent(
                 radialBursts = json.objectList("radialBursts").take(8).mapIndexed { index, item ->
                     RadialBurstComponent.parse(item, "$path.radialBursts[$index]", result)
                 }
+            )
+        }
+    }
+}
+
+data class GlowPostComponent(
+    val enabled: Boolean = true,
+    val intensity: Double = 1.35,
+    val radius: Double = 1.0,
+    val iterations: Int = 4,
+    val downsample: Int = 2,
+    val threshold: Double = 0.0
+) {
+    companion object {
+        fun parse(json: JsonObject?, path: String, result: ConfigLoadAccumulator): GlowPostComponent {
+            if (json == null) return GlowPostComponent()
+            return GlowPostComponent(
+                enabled = json.boolean("enabled", true),
+                intensity = json.double("intensity", 1.35, 0.0, 8.0, path, result),
+                radius = json.double("radius", 1.0, 0.25, 8.0, path, result),
+                iterations = json.int("iterations", 4, 1, 12, path, result),
+                downsample = json.int("downsample", 2, 1, 8, path, result),
+                threshold = json.double("threshold", 0.0, 0.0, 1.0, path, result)
             )
         }
     }

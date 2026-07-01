@@ -4,6 +4,7 @@ import io.github.yuazer.magicrender.config.AdvancedVisualComponent
 import io.github.yuazer.magicrender.config.BloomApproximationComponent
 import io.github.yuazer.magicrender.config.CircleLayerComponent
 import io.github.yuazer.magicrender.config.CoreGlowComponent
+import io.github.yuazer.magicrender.config.GlowPostComponent
 import io.github.yuazer.magicrender.config.ParticleEmitterComponent
 import io.github.yuazer.magicrender.config.RadialBurstComponent
 import io.github.yuazer.magicrender.config.RibbonBundleComponent
@@ -12,6 +13,7 @@ import net.minecraft.world.phys.Vec3
 data class AdvancedEffectDefinition(
     val effectId: String,
     val bloom: BloomApproximationDefinition,
+    val glow: GlowPostDefinition,
     val core: CoreGlowDefinition,
     val particleEmitters: List<ParticleEmitterDefinition>,
     val ribbonBundles: List<RibbonBundleDefinition>,
@@ -23,11 +25,34 @@ data class AdvancedEffectDefinition(
             return AdvancedEffectDefinition(
                 effectId = effectId,
                 bloom = BloomApproximationDefinition.from(component.bloom),
+                glow = GlowPostDefinition.from(component.glow),
                 core = CoreGlowDefinition.from(component.core),
                 particleEmitters = component.particleEmitters.filter { it.enabled }.map(ParticleEmitterDefinition::from),
                 ribbonBundles = component.ribbonBundles.filter { it.enabled }.map(RibbonBundleDefinition::from),
                 circleLayers = component.circleLayers.filter { it.enabled }.map(CircleLayerDefinition::from),
                 radialBursts = component.radialBursts.filter { it.enabled }.map(RadialBurstDefinition::from)
+            )
+        }
+    }
+}
+
+data class GlowPostDefinition(
+    val enabled: Boolean,
+    val intensity: Double,
+    val radius: Double,
+    val iterations: Int,
+    val downsample: Int,
+    val threshold: Double
+) {
+    companion object {
+        fun from(component: GlowPostComponent): GlowPostDefinition {
+            return GlowPostDefinition(
+                enabled = component.enabled,
+                intensity = component.intensity,
+                radius = component.radius,
+                iterations = component.iterations,
+                downsample = component.downsample,
+                threshold = component.threshold
             )
         }
     }
@@ -212,7 +237,8 @@ data class AdvancedEffectInstance(
     val target: TrailAnchor?,
     val lifetimeTicks: Int,
     val seeds: List<Double>,
-    var ageTicks: Int = 0
+    var ageTicks: Int = 0,
+    var renderAgeTicks: Double = 0.0
 ) {
     fun isAlive(): Boolean = ageTicks <= lifetimeTicks
 }
