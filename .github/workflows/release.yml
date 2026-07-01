@@ -1,0 +1,72 @@
+name: Build and Release
+
+on:
+  push:
+    branches:
+      - "**"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build-release:
+    name: Build and publish release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build
+        run: ./gradlew build --no-daemon
+
+      - name: Collect release artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p release-artifacts
+          find build/libs -maxdepth 1 -type f -name "magicrender-*.jar" \
+            ! -name "*-sources.jar" \
+            ! -name "*-dev-shadow.jar" \
+            ! -name "magicrender-nanohttpd-*.jar" \
+            -exec cp {} release-artifacts/ \;
+          test -n "$(find release-artifacts -maxdepth 1 -type f -name '*.jar' -print -quit)"
+
+      - name: Read project version
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="$(grep '^mod_version=' gradle.properties | cut -d= -f2-)"
+          short_sha="${GITHUB_SHA::7}"
+          safe_ref="${GITHUB_REF_NAME//\//-}"
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          echo "short_sha=${short_sha}" >> "$GITHUB_OUTPUT"
+          echo "tag=auto-${safe_ref}-${short_sha}-${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: MagicRender ${{ steps.version.outputs.version }} (${{ steps.version.outputs.short_sha }})
+          body: |
+            Automated release for commit `${{ github.sha }}`.
+
+            Branch: `${{ github.ref_name }}`
+            Version: `${{ steps.version.outputs.version }}`
+          files: release-artifacts/*.jar
+          fail_on_unmatched_files: true
