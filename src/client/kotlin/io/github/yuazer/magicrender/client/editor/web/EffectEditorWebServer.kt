@@ -1,13 +1,17 @@
 package io.github.yuazer.magicrender.client.editor.web
 
 import com.google.gson.GsonBuilder
+import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import io.github.yuazer.magicrender.client.config.ClientConfigReloader
 import io.github.yuazer.magicrender.client.editor.EffectEditorDraft
 import io.github.yuazer.magicrender.client.editor.EffectEditorExporter
+import io.github.yuazer.magicrender.client.editor.EffectEditorJson
 import io.github.yuazer.magicrender.client.editor.EffectEditorPreview
+import io.github.yuazer.magicrender.client.editor.EffectEditorProjectDraft
 import io.github.yuazer.magicrender.client.editor.EffectEditorValidation
+import io.github.yuazer.magicrender.config.obj
 import io.github.yuazer.magicrender.config.MagicRenderConfigManager
 import io.github.yuazer.magicrender.shadow.nanohttpd.NanoHTTPD
 import net.minecraft.client.Minecraft
@@ -43,6 +47,8 @@ class EffectEditorWebServer(
                 }
                 session.method == Method.POST && uri == "/api/export" -> json(exportJson(readJson(session), overwrite = false))
                 session.method == Method.POST && uri == "/api/export/overwrite" -> json(exportJson(readJson(session), overwrite = true))
+                session.method == Method.POST && uri == "/api/export/group" -> json(exportGroupJson(readJson(session), overwrite = false))
+                session.method == Method.POST && uri == "/api/export/group/overwrite" -> json(exportGroupJson(readJson(session), overwrite = true))
                 session.method == Method.POST && uri == "/api/reload" -> {
                     val result = ClientConfigReloader.reloadClient()
                     json(messageJson(result.success, result.summary()))
@@ -87,6 +93,7 @@ class EffectEditorWebServer(
             item.addProperty("trail", effect.components.trail.enabled)
             item.addProperty("beam", effect.components.beam.enabled)
             item.addProperty("magicCircle", effect.components.magicCircle.enabled)
+            item.add("config", EffectEditorJson.toJsonObject(effect))
             effects.add(item)
         }
         root.add("effects", effects)
@@ -116,6 +123,27 @@ class EffectEditorWebServer(
         val json = messageJson(result.success, result.message.string)
         result.path?.let { json.addProperty("path", it.toString()) }
         return json
+    }
+
+    private fun exportGroupJson(body: JsonObject, overwrite: Boolean): JsonObject {
+        val project = projectFromJson(body)
+        val includeEffects = body.get("includeEffects")?.let { runCatching { it.asBoolean }.getOrNull() } ?: true
+        val result = EffectEditorExporter.exportGroup(project, overwrite, includeEffects)
+        val json = messageJson(result.success, result.message.string)
+        result.path?.let { json.addProperty("path", it.toString()) }
+        return json
+    }
+
+    private fun projectFromJson(body: JsonObject): EffectEditorProjectDraft {
+        val group = body.obj("group") ?: JsonObject()
+        val effects = body.get("effects")?.takeIf { it.isJsonArray }?.asJsonArray ?: JsonArray()
+        return EffectEditorProjectDraft(
+            groupKey = group.get("key")?.asString ?: body.get("groupKey")?.asString ?: "magicrender:editor_group",
+            description = group.get("description")?.asString ?: "",
+            effects = effects.mapNotNull { element ->
+                if (element.isJsonObject) EffectEditorDraftCodec.fromJson(element.asJsonObject) else null
+            }
+        )
     }
 
     private fun readJson(session: IHTTPSession): JsonObject {

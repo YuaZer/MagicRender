@@ -8,7 +8,7 @@
 </head>
 <body>
   <main class="shell">
-    <aside class="sidebar">
+    <aside class="groupbar">
       <div class="brand">
         <div class="mark"></div>
         <div>
@@ -16,13 +16,44 @@
           <p data-i18n="appSubtitle">Effect Editor</p>
         </div>
       </div>
-      <nav class="tabs" id="tabs"></nav>
+      <section class="panel project-panel">
+        <div class="panel-head">
+          <h2 data-i18n="effectGroupTitle">Effect Group</h2>
+          <button id="addChildBtn" class="icon-button secondary" type="button" data-i18n-title="addChildEffect" title="Add child effect">+</button>
+        </div>
+        <label class="project-label" for="groupKeyInput" data-i18n="groupKey">Group Key</label>
+        <input id="groupKeyInput" class="project-input" type="text" spellcheck="false">
+        <label class="project-label" for="groupDescriptionInput" data-i18n="groupDescription">Description</label>
+        <textarea id="groupDescriptionInput" class="project-input project-description" spellcheck="false"></textarea>
+        <div id="projectTree" class="project-tree"></div>
+        <label class="project-check">
+          <input id="includeEffectsOnGroupExport" type="checkbox" checked>
+          <span data-i18n="exportChildrenWithGroup">Export child effects with group</span>
+        </label>
+        <div class="project-actions">
+          <button id="exportGroupBtn" type="button" data-i18n="exportGroup">Export Group</button>
+          <button id="overwriteGroupBtn" class="danger" type="button" data-i18n="overwriteGroup">Overwrite Group</button>
+        </div>
+        <div class="import-row">
+          <select id="importEffectSelect"></select>
+          <button id="importChildBtn" class="secondary" type="button" data-i18n="importChild">Import Child</button>
+        </div>
+      </section>
+    </aside>
+    <div class="resize-handle shell-resizer" data-resize="groupbar" role="separator" aria-orientation="vertical" title="Resize effect group panel"></div>
+
+    <aside class="typebar">
+      <section class="panel compact">
+        <h2 data-i18n="effectTypeTitle">Effect Type</h2>
+        <nav class="tabs" id="tabs"></nav>
+      </section>
       <section class="panel compact">
         <h2 data-i18n="runtimeTitle">Runtime</h2>
         <dl id="runtime"></dl>
         <button id="reloadBtn" class="secondary" data-i18n="reloadConfig">Reload Config</button>
       </section>
     </aside>
+    <div class="resize-handle shell-resizer" data-resize="typebar" role="separator" aria-orientation="vertical" title="Resize effect type panel"></div>
 
     <section class="workspace">
       <header class="toolbar">
@@ -45,6 +76,7 @@
 
       <section class="content">
         <form id="form" class="form-grid"></form>
+        <div class="resize-handle content-resizer" data-resize="form" role="separator" aria-orientation="vertical" title="Resize parameter panel"></div>
         <aside class="inspector">
           <section class="panel preview-panel" id="previewPanel">
             <div class="panel-head">

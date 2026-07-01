@@ -111,7 +111,21 @@ const translations = {
     circleLayerRadius: "Layer Radius",
     circleLayerGlyphs: "Layer Glyphs",
     burstRays: "Burst Rays",
-    burstLength: "Burst Length"
+    burstLength: "Burst Length",
+    effectGroupTitle: "Effect Group",
+    effectTypeTitle: "Effect Type",
+    addChildEffect: "Add child effect",
+    groupKey: "Group Key",
+    groupDescription: "Description",
+    exportChildrenWithGroup: "Export child effects with group",
+    exportGroup: "Export Group",
+    overwriteGroup: "Overwrite Group",
+    importChild: "Import Child",
+    groupNodePrefix: "Group",
+    exportChild: "Export",
+    deleteChild: "Delete",
+    groupNodeHint: "This node is the exported effect group. Select a child effect below to edit its config.",
+    noImportEffectSelected: "No runtime effect config selected for import."
   },
   zh: {
     appSubtitle: "特效编辑器",
@@ -222,7 +236,21 @@ const translations = {
     circleLayerRadius: "法阵层半径",
     circleLayerGlyphs: "法阵层符文数",
     burstRays: "光刺数量",
-    burstLength: "光刺长度"
+    burstLength: "光刺长度",
+    effectGroupTitle: "\u7279\u6548\u7ec4",
+    effectTypeTitle: "\u7279\u6548\u7c7b\u578b",
+    addChildEffect: "\u6dfb\u52a0\u5b50\u7279\u6548",
+    groupKey: "\u7ec4 Key",
+    groupDescription: "\u63cf\u8ff0",
+    exportChildrenWithGroup: "\u5bfc\u51fa\u7ec4\u65f6\u540c\u65f6\u5bfc\u51fa\u5b50\u7279\u6548",
+    exportGroup: "\u5bfc\u51fa\u7279\u6548\u7ec4",
+    overwriteGroup: "\u8986\u76d6\u7279\u6548\u7ec4",
+    importChild: "\u5bfc\u5165\u5b50\u7279\u6548",
+    groupNodePrefix: "\u7279\u6548\u7ec4",
+    exportChild: "\u5bfc\u51fa",
+    deleteChild: "\u5220\u9664",
+    groupNodeHint: "\u8fd9\u662f\u5bfc\u51fa\u7528\u7684\u7279\u6548\u7ec4\u8282\u70b9\u3002\u9009\u62e9\u4e0b\u65b9\u5b50\u7279\u6548\u540e\u7f16\u8f91\u5176\u914d\u7f6e\u3002",
+    noImportEffectSelected: "\u6ca1\u6709\u9009\u62e9\u53ef\u5bfc\u5165\u7684\u8fd0\u884c\u65f6\u7279\u6548\u914d\u7f6e\u3002"
   }
 };
 
@@ -432,10 +460,14 @@ const pages = [
 ];
 
 let state = null;
+let project = null;
 let page = "basic";
 let preview3d = null;
+let defaultDraft = null;
+let runtimeEffects = [];
 
 const $ = (id) => document.getElementById(id);
+const layoutStorageKey = "magicrender.editor.layout";
 const pathGet = (obj, path) => path.split(".").reduce((a, b) => a?.[b], obj);
 const pathSet = (obj, path, value) => {
   const parts = path.split(".");
@@ -559,6 +591,8 @@ function applyLanguage() {
     node.title = t(node.dataset.i18nTitle);
     node.setAttribute("aria-label", t(node.dataset.i18nTitle));
   });
+  const zhOption = document.querySelector("#languageSelect option[value='zh']");
+  if (zhOption) zhOption.textContent = "\u4e2d\u6587";
   $("languageSelect").value = language;
   if ($("status").textContent === "" || $("status").textContent === translations.en.ready || $("status").textContent === translations.zh.ready) {
     setStatus(t("ready"));
@@ -575,11 +609,238 @@ async function api(path, body) {
   const options = body === undefined ? {} : {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(state)
+    body: JSON.stringify(body)
   };
   const response = await fetch(path, options);
   if (!response.ok) throw new Error(await response.text());
   return response.json();
+}
+
+function cloneJson(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+
+function createProject(effect) {
+  const draft = cloneJson(effect);
+  const groupKey = validGroupKey(draft.group) ? draft.group : "magicrender:editor_group";
+  draft.group = groupKey;
+  return {
+    group: { key: groupKey, description: "" },
+    effects: [draft],
+    selectedIndex: 0
+  };
+}
+
+function validGroupKey(value) {
+  return /^[a-z0-9_.-]+:[a-z0-9_./-]+$/.test(String(value || ""));
+}
+
+function selectedEffect() {
+  if (!project?.effects?.length) return null;
+  project.selectedIndex = Math.max(0, Math.min(project.selectedIndex || 0, project.effects.length - 1));
+  return project.effects[project.selectedIndex];
+}
+
+function syncStateFromProject() {
+  state = selectedEffect();
+  if (state && project?.group?.key) state.group = project.group.key;
+}
+
+function projectPayload() {
+  syncStateFromProject();
+  return {
+    group: {
+      key: project.group.key,
+      description: project.group.description || ""
+    },
+    effects: project.effects,
+    selectedIndex: project.selectedIndex || 0,
+    includeEffects: $("includeEffectsOnGroupExport")?.checked !== false
+  };
+}
+
+function nextChildId() {
+  const prefix = String(project?.group?.key || "magicrender:editor_group").replace(":", ":").replace(/[^a-z0-9_:./-]/g, "_");
+  const base = prefix.includes(":") ? prefix : "magicrender:editor_group";
+  let index = project.effects.length + 1;
+  const existing = new Set(project.effects.map((effect) => effect.id));
+  while (existing.has(`${base}_child_${index}`)) index += 1;
+  return `${base}_child_${index}`;
+}
+
+function addChildEffect(source = null) {
+  const child = cloneJson(source || defaultDraft || state);
+  child.id = source?.id ? uniqueImportedId(source.id) : nextChildId();
+  child.group = project.group.key;
+  project.effects.push(child);
+  project.selectedIndex = project.effects.length - 1;
+  render();
+}
+
+function uniqueImportedId(id) {
+  const existing = new Set(project.effects.map((effect) => effect.id));
+  if (!existing.has(id)) return id;
+  let index = 2;
+  while (existing.has(`${id}_${index}`)) index += 1;
+  return `${id}_${index}`;
+}
+
+function updateProjectGroupFromInputs() {
+  const nextKey = $("groupKeyInput").value.trim();
+  project.group.key = nextKey || "magicrender:editor_group";
+  project.group.description = $("groupDescriptionInput").value;
+  for (const effect of project.effects) effect.group = project.group.key;
+  syncStateFromProject();
+  updateJson();
+  renderProjectTree();
+}
+
+function renderProjectTree() {
+  if (!project) return;
+  $("groupKeyInput").value = project.group.key || "";
+  $("groupDescriptionInput").value = project.group.description || "";
+  const tree = $("projectTree");
+  tree.innerHTML = "";
+
+  const root = document.createElement("div");
+  root.className = "project-node";
+  const rootButton = document.createElement("button");
+  rootButton.type = "button";
+  rootButton.className = "node-main secondary";
+  rootButton.textContent = `${t("groupNodePrefix")}: ${project.group.key || "(empty)"}`;
+  rootButton.onclick = () => setStatus(t("groupNodeHint"));
+  root.appendChild(rootButton);
+  root.appendChild(document.createElement("span"));
+  root.appendChild(document.createElement("span"));
+  tree.appendChild(root);
+
+  project.effects.forEach((effect, index) => {
+    const row = document.createElement("div");
+    row.className = "project-node";
+    const select = document.createElement("button");
+    select.type = "button";
+    select.className = `node-main child secondary${index === project.selectedIndex ? " active" : ""}`;
+    select.textContent = effect.id || `child_${index + 1}`;
+    select.title = effect.id || "";
+    select.onclick = () => {
+      project.selectedIndex = index;
+      render();
+    };
+    const exportOne = document.createElement("button");
+    exportOne.type = "button";
+    exportOne.className = "secondary";
+    exportOne.textContent = t("exportChild");
+    exportOne.onclick = async () => {
+      project.selectedIndex = index;
+      syncStateFromProject();
+      const result = await api("/api/export", state);
+      setStatus(result.message, result.ok);
+    };
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.className = "danger";
+    remove.textContent = t("deleteChild");
+    remove.disabled = project.effects.length <= 1;
+    remove.onclick = () => {
+      project.effects.splice(index, 1);
+      project.selectedIndex = Math.max(0, Math.min(project.selectedIndex, project.effects.length - 1));
+      render();
+    };
+    row.appendChild(select);
+    row.appendChild(exportOne);
+    row.appendChild(remove);
+    tree.appendChild(row);
+  });
+}
+
+function renderImportOptions() {
+  const select = $("importEffectSelect");
+  if (!select) return;
+  select.innerHTML = "";
+  for (const effect of runtimeEffects) {
+    const option = document.createElement("option");
+    option.value = effect.id;
+    option.textContent = effect.id;
+    select.appendChild(option);
+  }
+}
+
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
+
+function readLayout() {
+  try {
+    return JSON.parse(localStorage.getItem(layoutStorageKey) || "{}");
+  } catch {
+    return {};
+  }
+}
+
+function writeLayout(next) {
+  localStorage.setItem(layoutStorageKey, JSON.stringify({ ...readLayout(), ...next }));
+}
+
+function applyStoredLayout() {
+  const layout = readLayout();
+  if (Number.isFinite(layout.groupbar)) {
+    document.documentElement.style.setProperty("--groupbar-width", `${clamp(layout.groupbar, 300, 560)}px`);
+  }
+  if (Number.isFinite(layout.typebar)) {
+    document.documentElement.style.setProperty("--typebar-width", `${clamp(layout.typebar, 210, 380)}px`);
+  }
+  if (Number.isFinite(layout.form)) {
+    document.documentElement.style.setProperty("--form-width", `${clamp(layout.form, 500, 880)}px`);
+  }
+}
+
+function setupResizers() {
+  document.querySelectorAll("[data-resize]").forEach((handle) => {
+    handle.addEventListener("pointerdown", (event) => {
+      event.preventDefault();
+      handle.setPointerCapture?.(event.pointerId);
+      handle.classList.add("dragging");
+      const resizeTarget = handle.dataset.resize;
+      const onMove = (moveEvent) => {
+        if (resizeTarget === "groupbar") resizeGroupbar(moveEvent.clientX);
+        else if (resizeTarget === "typebar") resizeTypebar(moveEvent.clientX);
+        else if (resizeTarget === "form") resizeForm(moveEvent.clientX);
+        resizePreview3d();
+        renderPreview3d();
+      };
+      const onEnd = () => {
+        handle.classList.remove("dragging");
+        window.removeEventListener("pointermove", onMove);
+        window.removeEventListener("pointerup", onEnd);
+        window.removeEventListener("pointercancel", onEnd);
+      };
+      window.addEventListener("pointermove", onMove);
+      window.addEventListener("pointerup", onEnd);
+      window.addEventListener("pointercancel", onEnd);
+    });
+  });
+}
+
+function resizeGroupbar(clientX) {
+  const shell = document.querySelector(".shell").getBoundingClientRect();
+  const width = clamp(clientX - shell.left, 300, Math.min(560, shell.width - 760));
+  document.documentElement.style.setProperty("--groupbar-width", `${width}px`);
+  writeLayout({ groupbar: width });
+}
+
+function resizeTypebar(clientX) {
+  const shell = document.querySelector(".shell").getBoundingClientRect();
+  const groupWidth = document.querySelector(".groupbar").getBoundingClientRect().width;
+  const width = clamp(clientX - shell.left - groupWidth - 6, 210, Math.min(380, shell.width - groupWidth - 620));
+  document.documentElement.style.setProperty("--typebar-width", `${width}px`);
+  writeLayout({ typebar: width });
+}
+
+function resizeForm(clientX) {
+  const content = document.querySelector(".content").getBoundingClientRect();
+  const width = clamp(clientX - content.left, 500, Math.max(500, content.width - 430));
+  document.documentElement.style.setProperty("--form-width", `${width}px`);
+  writeLayout({ form: width });
 }
 
 function renderTabs() {
@@ -644,6 +905,11 @@ function renderForm() {
     input.oninput = () => {
       const value = type === "checkbox" ? input.checked : type === "number" ? Number(input.value) : input.value;
       pathSet(state, key, value);
+      if (key === "group" && project) {
+        project.group.key = value || "magicrender:editor_group";
+        for (const effect of project.effects) effect.group = project.group.key;
+      }
+      renderProjectTree();
       updateJson();
       drawPreview();
     };
@@ -671,7 +937,7 @@ function ensureAdvancedDefaults() {
 }
 
 function updateJson() {
-  $("jsonView").value = JSON.stringify(state, null, 2);
+  $("jsonView").value = project ? JSON.stringify(projectPayload(), null, 2) : JSON.stringify(state, null, 2);
 }
 
 function setStatus(message, ok = true) {
@@ -696,6 +962,14 @@ function addMessage(text, error) {
 async function refreshRuntime() {
   const status = await api("/api/status");
   $("runtime").innerHTML = `<dt>${t("runtimeUrl")}</dt><dd>${status.url}</dd><dt>${t("runtimeEffects")}</dt><dd>${status.effects}</dd><dt>${t("runtimePort")}</dt><dd>${status.port}</dd>`;
+  try {
+    const effects = await api("/api/effects");
+    runtimeEffects = (effects.effects ?? []).filter((effect) => effect.config);
+    renderImportOptions();
+  } catch (error) {
+    runtimeEffects = [];
+    renderImportOptions();
+  }
 }
 
 function drawPreview() {
@@ -1343,6 +1617,8 @@ function alphaValue(value) {
 }
 
 function render() {
+  syncStateFromProject();
+  renderProjectTree();
   renderTabs();
   renderForm();
   updateJson();
@@ -1350,10 +1626,35 @@ function render() {
 }
 
 async function init() {
-  state = await api("/api/draft/default");
+  applyStoredLayout();
+  setupResizers();
+  defaultDraft = await api("/api/draft/default");
+  project = createProject(defaultDraft);
+  syncStateFromProject();
   applyLanguage();
   await refreshRuntime();
   render();
+  $("groupKeyInput").oninput = updateProjectGroupFromInputs;
+  $("groupDescriptionInput").oninput = updateProjectGroupFromInputs;
+  $("includeEffectsOnGroupExport").onchange = updateJson;
+  $("addChildBtn").onclick = () => addChildEffect();
+  $("importChildBtn").onclick = () => {
+    const id = $("importEffectSelect").value;
+    const match = runtimeEffects.find((effect) => effect.id === id);
+    if (!match?.config) {
+      setStatus(t("noImportEffectSelected"), false);
+      return;
+    }
+    addChildEffect(match.config);
+  };
+  $("exportGroupBtn").onclick = async () => {
+    const result = await api("/api/export/group", projectPayload());
+    setStatus(result.message, result.ok);
+  };
+  $("overwriteGroupBtn").onclick = async () => {
+    const result = await api("/api/export/group/overwrite", projectPayload());
+    setStatus(result.message, result.ok);
+  };
   $("languageSelect").onchange = () => {
     language = $("languageSelect").value;
     localStorage.setItem("magicrender.editor.language", language);

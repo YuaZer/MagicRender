@@ -16,6 +16,7 @@ object MagicRenderConfigManager {
     private val logger = LoggerFactory.getLogger("MagicRender/Config")
     private val configRoot: Path = FabricLoader.getInstance().configDir.resolve("magicrender")
     private val effectsRoot: Path = configRoot.resolve("effects")
+    private val effectGroupsRoot: Path = configRoot.resolve("effects_group")
 
     @Volatile
     var current: LoadedMagicRenderConfig = LoadedMagicRenderConfig()
@@ -44,9 +45,9 @@ object MagicRenderConfigManager {
     fun ensureDefaultFiles(includeClient: Boolean) {
         configRoot.createDirectories()
         effectsRoot.createDirectories()
+        effectGroupsRoot.createDirectories()
         writeDefaultIfMissing(configRoot.resolve("common.json"), DefaultConfigFiles.COMMON)
         writeDefaultIfMissing(configRoot.resolve("server.json"), DefaultConfigFiles.SERVER)
-        writeDefaultIfMissing(configRoot.resolve("effect_groups.json"), DefaultConfigFiles.EFFECT_GROUPS)
         writeDefaultIfMissing(effectsRoot.resolve("arcane_burst.json"), DefaultConfigFiles.ARCANE_BURST)
         writeDefaultIfMissing(effectsRoot.resolve("dash_trail.json"), DefaultConfigFiles.DASH_TRAIL)
         writeDefaultIfMissing(effectsRoot.resolve("mana_link.json"), DefaultConfigFiles.MANA_LINK)
@@ -68,9 +69,8 @@ object MagicRenderConfigManager {
             ServerConfig.parse(it, result, "server.json")
         } ?: ServerConfig()
 
-        val groups = readJson(configRoot.resolve("effect_groups.json"), result)?.let {
-            EffectGroupConfig.parse(it, common, result, "effect_groups.json")
-        } ?: EffectGroupConfig()
+        val baseGroups = EffectGroupConfig()
+        val groups = loadEffectGroupBindings(baseGroups, common, result)
 
         val fatalErrorsBeforeEffects = result.errors.size
         val effects = loadEffects(common, groups, result)
@@ -105,6 +105,26 @@ object MagicRenderConfigManager {
                 }
         }
         return effects
+    }
+
+    private fun loadEffectGroupBindings(base: EffectGroupConfig, common: CommonConfig, result: ConfigLoadAccumulator): EffectGroupConfig {
+        if (!effectGroupsRoot.exists()) return base
+        val groups = linkedMapOf<String, EffectGroup>()
+        groups.putAll(base.groups)
+        val bindings = linkedMapOf<String, List<String>>()
+        bindings.putAll(base.bindings)
+        Files.list(effectGroupsRoot).use { stream ->
+            stream
+                .filter { it.isRegularFile() && it.name.endsWith(".json") }
+                .sorted()
+                .forEach { path ->
+                    val json = readJson(path, result) ?: return@forEach
+                    val parsed = EffectGroupConfig.parse(json, common, result, "effects_group/${path.name}")
+                    groups.putAll(parsed.groups)
+                    bindings.putAll(parsed.bindings)
+                }
+        }
+        return base.copy(groups = groups, bindings = bindings)
     }
 
     private fun readJson(path: Path, result: ConfigLoadAccumulator): com.google.gson.JsonObject? {

@@ -50,49 +50,6 @@ internal object DefaultConfigFiles {
 }
 """
 
-    const val EFFECT_GROUPS = """{
-  "version": 1,
-  "groups": {
-    "combat": {
-      "enabled": true,
-      "description": "Combat skill effects",
-      "priority": 100,
-      "effects": [
-        "magicrender:arcane_burst",
-        "magicrender:dash_trail",
-        "magicrender:mana_link",
-        "magicrender:entity_arcane_stream"
-      ],
-      "limits": {
-        "maxActiveEffects": 128,
-        "drawDistance": 96
-      }
-    },
-    "arcane_combo": [
-      "magicrender:arcane_burst",
-      "magicrender:entity_arcane_stream"
-    ],
-    "default": [
-      "magicrender:arcane_burst"
-    ],
-    "ambient": {
-      "enabled": true,
-      "description": "Ambient effects",
-      "priority": 20,
-      "limits": {
-        "maxActiveEffects": 64,
-        "drawDistance": 48
-      }
-    },
-    "debug": {
-      "enabled": false,
-      "description": "Debug visualization",
-      "priority": 0
-    }
-  }
-}
-"""
-
     const val ARCANE_BURST = """{
   "version": 1,
   "id": "magicrender:arcane_burst",
