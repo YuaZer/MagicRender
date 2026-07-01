@@ -1,8 +1,10 @@
 # MagicRender
 
-MagicRender is a Fabric mod for Minecraft 1.21.1 that provides configurable client-side magic visual effects, a local web editor, and server-to-client effect playback APIs.
+English | [简体中文](README.zh-CN.md)
 
-The project focuses on world-space visual effects such as trails, beams, magic circles, particle-like glow points, layered flowing ribbons, radial burst rays, and soft glow composition.
+MagicRender is a Fabric mod for Minecraft `1.21.1` that provides configurable client-side magic visual effects, a local web editor, and server-to-client playback APIs.
+
+The project focuses on world-space visual effects: motion trails, beams, magic circles, particle-like point clouds, flowing ribbon bundles, radial burst rays, grouped effects, and true screen-space glow for advanced layers.
 
 ## Requirements
 
@@ -14,19 +16,20 @@ The project focuses on world-space visual effects such as trails, beams, magic c
 
 ## Main Features
 
-- Config-driven visual effects loaded from `config/magicrender`.
-- Client-side render layers for:
+- Config-driven effects loaded from `config/magicrender`.
+- Client-side rendering for:
   - ribbon trails
   - beams
   - magic circles
-  - advanced glow/particle/ribbon/circle/burst layers
-- Local browser editor with Chinese/English UI.
-- 3D editor preview based on local Three.js assets.
-- Public client API for playing and stopping effects.
-- Server API plus S2C payloads for requesting target clients to play or stop effects.
-- Commands for reload, validation, test playback, and client-side entity binding.
+  - advanced core/particle/ribbon/circle/burst layers
+  - true post-process glow for advanced geometry
+- Effect groups: one group key can play multiple effect ids at the same time.
+- Frame-level client following: entity-attached effects interpolate on render frames instead of depending only on ticks.
+- Local browser editor with Chinese/English UI, hover help, draggable panel layout, effect-group project tree, and 3D preview.
+- Public client API and server API for playing/stopping single effects and effect groups.
+- Commands for reload, validation, test playback, and client-side binding.
 
-## Configuration
+## Configuration Layout
 
 Default configuration files are generated under:
 
@@ -34,30 +37,39 @@ Default configuration files are generated under:
 config/magicrender/
 ```
 
-Important files:
+Current layout:
 
 ```text
-common.json
-server.json
-client.json
-effect_groups.json
-effects/*.json
+config/magicrender/
+  common.json
+  server.json
+  client.json
+  effects/
+    *.json
+  effects_group/
+    *.json
 ```
 
-Effect ids use the standard `namespace:path` format, for example:
+`effects/*.json` contains individual effect definitions.
+
+`effects_group/*.json` contains effect-group project definitions. `effect_groups.json` is no longer used; group configuration is loaded from the `effects_group` directory only.
+
+Effect ids and group keys use the standard `namespace:path` format:
 
 ```json
-"id": "magicrender:entity_arcane_stream"
+"magicrender:arcane_burst"
 ```
 
-### Basic Effect Shape
+## Effect Definition
+
+Minimal shape:
 
 ```json
 {
   "version": 1,
   "id": "magicrender:example",
   "enabled": true,
-  "group": "combat",
+  "group": "magicrender:example_group",
   "durationTicks": 80,
   "importance": "normal",
   "visibility": {
@@ -68,11 +80,58 @@ Effect ids use the standard `namespace:path` format, for example:
 }
 ```
 
+Colors use `#RRGGBB` or `#RRGGBBAA`.
+
+## Effect Groups
+
+An effect group maps a group key to one or more child effect ids. Playing the group plays every referenced effect at the same source/target anchor.
+
+Example file:
+
+```text
+config/magicrender/effects_group/arcane_combo.json
+```
+
+```json
+{
+  "version": 1,
+  "groups": {
+    "magicrender:arcane_combo": {
+      "enabled": true,
+      "description": "Arcane combo group",
+      "priority": 100,
+      "effects": [
+        "magicrender:arcane_burst",
+        "magicrender:entity_arcane_stream"
+      ],
+      "limits": {
+        "maxActiveEffects": 128,
+        "drawDistance": 96
+      }
+    }
+  }
+}
+```
+
+Array shorthand is also supported:
+
+```json
+{
+  "version": 1,
+  "groups": {
+    "magicrender:arcane_combo": [
+      "magicrender:arcane_burst",
+      "magicrender:entity_arcane_stream"
+    ]
+  }
+}
+```
+
 ## Components
 
 ### Trail
 
-`components.trail` draws a ribbon following a source anchor. It supports width/color curves, texture, blend mode, sampling settings, and motion offsets.
+`components.trail` draws a ribbon following a source anchor. It supports width/color curves, texture, blend mode, sampling settings, segment interpolation, and motion offsets.
 
 Motion modes:
 
@@ -84,7 +143,7 @@ Motion modes:
 - `js`
 - `javascript`
 
-Formula mode supports JavaScript-style mathematical expressions, not arbitrary script execution.
+Formula mode uses JavaScript-style mathematical expressions, not arbitrary script execution.
 
 Available variables:
 
@@ -124,7 +183,7 @@ It supports:
 
 ### Magic Circle
 
-`components.magicCircle` draws a camera-facing or horizontal circle with inner ring and glyph tick marks.
+`components.magicCircle` draws a camera-facing or horizontal circle with an inner ring and glyph tick marks.
 
 It supports:
 
@@ -135,20 +194,23 @@ It supports:
 - rotation speed
 - facing mode
 - glyph count
-- blend mode
+- alpha/additive blend mode
 
 ### Advanced
 
-`components.advanced` is the newer layered visual system. It is intended for effects like glowing point clouds, magic cores, layered runic circles, flowing light streams, and radial energy bursts.
+`components.advanced` is the layered visual system for magic cores, point clouds, flowing light streams, layered runic circles, and radial energy bursts.
 
 It contains:
 
-- `bloom`: pseudo-bloom/soft glow layering.
+- `bloom`: legacy pseudo-bloom layering for compatibility.
+- `glow`: true screen-space glow settings.
 - `core`: central glow sprite.
-- `particleEmitters[]`: billboard point-cloud emitters.
+- `particleEmitters[]`: billboard/point-cloud emitters.
 - `ribbonBundles[]`: multiple flowing ribbon curves.
 - `circleLayers[]`: multiple independent circle layers.
 - `radialBursts[]`: ray-like burst strokes from the source.
+
+True glow renders bright advanced geometry to an offscreen buffer, blurs it, and additively composites it back into the scene.
 
 Example:
 
@@ -161,6 +223,14 @@ Example:
     "scaleStep": 1.8,
     "alphaFalloff": 0.45
   },
+  "glow": {
+    "enabled": true,
+    "intensity": 1.35,
+    "radius": 1.0,
+    "iterations": 4,
+    "downsample": 2,
+    "threshold": 0.0
+  },
   "core": {
     "enabled": true,
     "color": "#FFFF66FF",
@@ -170,26 +240,6 @@ Example:
     "texture": "minecraft:textures/particle/flash.png",
     "blendMode": "additive"
   },
-  "particleEmitters": [
-    {
-      "enabled": true,
-      "shape": "sphere",
-      "count": 160,
-      "color": {
-        "start": "#FF445CFF",
-        "end": "#AAFF44FF"
-      },
-      "size": {
-        "start": 0.08,
-        "end": 0.018
-      },
-      "radius": 2.2,
-      "height": 2.0,
-      "noise": 0.35,
-      "texture": "minecraft:textures/particle/flash.png",
-      "blendMode": "additive"
-    }
-  ],
   "ribbonBundles": [
     {
       "enabled": true,
@@ -216,13 +266,11 @@ Example:
 }
 ```
 
-Note: the current glow implementation is pseudo-bloom using layered additive billboards. It is not a full screen-space post-processing bloom pipeline.
-
 ## Local Web Editor
 
-The client starts a local editor web server when enabled by client config.
+The client starts a local editor web server when enabled in `client.json`.
 
-Default editor assets are under:
+Editor assets:
 
 ```text
 src/main/resources/assets/magicrender/editor/
@@ -231,11 +279,17 @@ src/main/resources/assets/magicrender/editor/
 The editor supports:
 
 - Chinese/English switching.
+- Effect-group project editing.
+- Tree management for child effects.
+- Adding a new child effect under a group.
+- Importing loaded effects as child effects.
+- Exporting a whole group to `config/magicrender/effects_group`.
+- Exporting all child effects to `config/magicrender/effects` when group export includes children.
+- Exporting a selected child effect separately.
 - Form editing for common effect fields.
-- Full JSON editing/export.
 - Hover help for parameters.
-- 3D preview with orbit, pan, zoom, reset camera, and expanded preview.
-- Advanced configuration preview for glow, particles, ribbon bundles, circle layers, and radial bursts.
+- 3D preview with orbit/pan/zoom, reset camera, expanded preview, motion trails, ribbon bundles, and approximate preview glow.
+- Draggable layout columns for effect groups, effect type tabs, parameter fields, and preview/status/JSON panels.
 
 The editor uses local Three.js files:
 
@@ -261,6 +315,7 @@ Useful server commands:
 /magicrender config validate
 /magicrender play self <effectId>
 /magicrender play nearby <effectId>
+/magicrender play group <groupKey>
 /magicrender stop all
 ```
 
@@ -282,6 +337,8 @@ Useful client commands:
 /mrender bind trail <effectId>
 /mrender bind circle <effectId>
 /mrender bind stream <effectId>
+/mrender bind group <groupKey>
+/mrender bindGroup <groupKey>
 ```
 
 Client binding commands are mainly for single-player/testing and bind visuals to the entity under the crosshair.
@@ -301,17 +358,26 @@ Common methods:
 ```kotlin
 MagicRenderClientApi.playEffect(effectId, source)
 MagicRenderClientApi.playEffect(effectId, source, target)
+MagicRenderClientApi.playGroup(groupKey, source)
+MagicRenderClientApi.playGroup(groupKey, source, target)
 MagicRenderClientApi.playTrail(effectId, source)
 MagicRenderClientApi.playMagicCircle(effectId, source)
 MagicRenderClientApi.playBeam(effectId, source, target)
+MagicRenderClientApi.bindGroup(groupKey, entity)
+MagicRenderClientApi.bindEntityGroup(groupKey, entity)
 MagicRenderClientApi.stop(handle)
 MagicRenderClientApi.stopEffect(effectId)
+MagicRenderClientApi.stopGroup(groupKey)
 MagicRenderClientApi.stopBoundToEntity(entityId)
 MagicRenderClientApi.stopAllApiEffects()
 MagicRenderClientApi.clearAllRenderedEffects()
+MagicRenderClientApi.loadedGroupEffectIds(groupKey)
+MagicRenderClientApi.loadedGroupKeys()
 ```
 
 `playEffect` automatically includes enabled trail, magic circle, beam, and advanced components.
+
+`playGroup` resolves `groupKey` through the loaded group bindings and plays all referenced effect ids.
 
 ### Server API
 
@@ -329,8 +395,13 @@ MagicRenderServerApi.play(player, effectId, sourceEntity, targetEntity)
 MagicRenderServerApi.play(player, effectId, sourcePosition)
 MagicRenderServerApi.playForTracking(entity, effectId)
 MagicRenderServerApi.broadcast(server, effectId, sourcePosition)
+MagicRenderServerApi.playGroup(player, groupKey, sourceEntity)
+MagicRenderServerApi.playGroup(player, groupKey, sourceEntity, targetEntity)
+MagicRenderServerApi.playGroupForTracking(entity, groupKey)
+MagicRenderServerApi.broadcastGroup(server, groupKey, sourcePosition)
 MagicRenderServerApi.stop(player, requestId)
 MagicRenderServerApi.stopEffect(player, effectId)
+MagicRenderServerApi.stopGroup(player, groupKey)
 MagicRenderServerApi.stopBoundToEntity(player, entity)
 MagicRenderServerApi.stopAll(player)
 ```
@@ -350,7 +421,29 @@ Current S2C payloads:
 - `magicrender:play_effect`
 - `magicrender:stop_effect`
 
-Payloads support entity anchors and world-point anchors.
+Play payloads support:
+
+- single effect playback
+- effect-group playback
+- entity anchors
+- world-point anchors
+- optional target anchors
+
+Stop payloads support:
+
+- request id
+- effect id
+- group key
+- entity id
+- all effects
+
+## Rendering Notes
+
+- Entity-bound effects are resolved against interpolated render-frame positions, reducing visual separation from moving entities.
+- Trail sampling can update per render frame and ages samples using frame time.
+- Advanced, trail, beam, and magic-circle managers prepare render-frame data before drawing.
+- True glow is available for advanced components through `components.advanced.glow`.
+- The web editor preview approximates true glow; the in-game renderer uses the actual offscreen glow processor.
 
 ## Build
 
@@ -381,7 +474,7 @@ src/client/kotlin/io/github/yuazer/magicrender/client/
   api/          Client-side public API
   command/      Client commands
   config/       Client config and compatibility gates
-  editor/       Editor draft/export/preview logic
+  editor/       Editor draft/export/preview/web-server logic
   effect/       Runtime render managers/builders/backends
   network/      Client payload receivers
 
@@ -394,8 +487,10 @@ src/main/resources/assets/magicrender/
 ## Notes
 
 - Resource ids must use `namespace:path`.
-- Colors use `#RRGGBB` or `#AARRGGBB`.
+- Effect-group keys also use `namespace:path`.
+- Colors use `#RRGGBB` or `#RRGGBBAA`.
 - Additive blending is best for energy/glow effects.
-- Alpha blending is better for soft smoke, water, or non-glowing transparent visuals.
-- Advanced pseudo-bloom increases draw calls because it renders extra translucent layers.
-- Large particle counts and many ribbon bundles should be used with group/client limits in mind.
+- Alpha blending is better for smoke, water, or non-glowing transparent visuals.
+- Legacy pseudo-bloom increases draw calls because it renders extra translucent layers.
+- True glow costs extra offscreen rendering and blur passes; tune `downsample`, `iterations`, and `radius` for performance.
+- Large particle counts, long trails, and many ribbon bundles should be used with group/client limits in mind.
