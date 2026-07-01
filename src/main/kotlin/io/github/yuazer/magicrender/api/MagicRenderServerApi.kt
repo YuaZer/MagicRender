@@ -51,6 +51,11 @@ object MagicRenderServerApi {
     fun playGroup(player: ServerPlayer, groupKey: String, source: Vec3): Long {
         return sendGroupPlay(player, groupKey, MagicRenderAnchorPayload.world(source), null)
     }
+    @JvmStatic
+    fun playGroup(player: ServerPlayer, groupKey: String, sourceX: Double,sourceY: Double,sourceZ: Double): Long {
+        val source = Vec3(sourceX,sourceY,sourceZ)
+        return sendGroupPlay(player, groupKey, MagicRenderAnchorPayload.world(source), null)
+    }
 
     @JvmStatic
     fun playGroup(player: ServerPlayer, groupKey: String, source: Entity, target: Entity): Long {
@@ -64,6 +69,12 @@ object MagicRenderServerApi {
 
     @JvmStatic
     fun playGroup(player: ServerPlayer, groupKey: String, source: Vec3, target: Vec3): Long {
+        return sendGroupPlay(player, groupKey, MagicRenderAnchorPayload.world(source), MagicRenderAnchorPayload.world(target))
+    }
+    @JvmStatic
+    fun playGroup(player: ServerPlayer, groupKey: String, sourceX: Double,sourceY: Double,sourceZ: Double,targetX: Double,targetY: Double,targetZ: Double): Long {
+        val source = Vec3(sourceX,sourceY,sourceZ)
+        val target = Vec3(targetX,targetY,targetZ)
         return sendGroupPlay(player, groupKey, MagicRenderAnchorPayload.world(source), MagicRenderAnchorPayload.world(target))
     }
 
